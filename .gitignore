@@ -45,3 +45,7 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+.vscode/launch.json
+Assembly-CSharp-Editor.csproj
+*.csproj
+Assets/VSCode.meta

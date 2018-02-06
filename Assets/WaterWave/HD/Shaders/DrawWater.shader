@@ -1,4 +1,4 @@
-﻿Shader "Unlit/DrawWater"
+﻿Shader "WaterWave/DrawWater"
 {
 	Properties
 	{

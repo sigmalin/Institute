@@ -1,4 +1,4 @@
-﻿Shader "Unlit/DrawWave2"
+﻿Shader "WaterWave/DrawWave_LD"
 {
 	Properties
 	{

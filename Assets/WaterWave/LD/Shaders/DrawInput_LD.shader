@@ -1,4 +1,4 @@
-﻿Shader "Unlit/DrawInput"
+﻿Shader "WaterWave/DrawInput_LD"
 {
 	Properties
 	{

@@ -36,4 +36,4 @@ Material:
     - _Stride: 1
     m_Colors:
     - _Diff: {r: 0, g: 0, b: 0, a: 0}
-    - _PrevPrev2Diff: {r: -1.1046369e-10, g: -0.0012635572, b: -2.1302766e-10, a: -0.0024367524}
+    - _PrevPrev2Diff: {r: 0, g: 0.0014673742, b: 0, a: 0.0026283672}

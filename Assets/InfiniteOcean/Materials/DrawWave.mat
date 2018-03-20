@@ -31,9 +31,9 @@ Material:
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     m_Floats:
-    - _Attenuation: 0.96
-    - _Parameter: 0.5
-    - _Stride: 1
+    - _Attenuation: 0.99
+    - _Parameter: 0.1
+    - _Stride: 2
     m_Colors:
     - _Diff: {r: 0, g: 0, b: 0, a: 0}
-    - _PrevPrev2Diff: {r: 0, g: 0.0014673742, b: 0, a: 0.0026283672}
+    - _PrevPrev2Diff: {r: 0, g: 0, b: 0, a: 0}

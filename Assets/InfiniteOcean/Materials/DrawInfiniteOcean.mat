@@ -19,8 +19,16 @@ Material:
     serializedVersion: 3
     m_TexEnvs:
     - _BumpTex:
-        m_Texture: {fileID: 2800000, guid: 30b87b617d5c7db45a1007a04404a676, type: 3}
+        m_Texture: {fileID: 2800000, guid: 3bc6f0ba9c72eec44af4f3762b50de0b, type: 3}
         m_Scale: {x: 500, y: 500}
+        m_Offset: {x: 0, y: 0}
+    - _Foam:
+        m_Texture: {fileID: 2800000, guid: c70b2455fda8ffd4e9bf658c53a7a122, type: 3}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _FoamBump:
+        m_Texture: {fileID: 2800000, guid: 2562543fbfcb7514594617237429d0dd, type: 3}
+        m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
     - _RefTex:
         m_Texture: {fileID: 0}
@@ -33,6 +41,9 @@ Material:
     m_Floats:
     - _BumpAmt: 40
     - _NormalScaleFactor: 1.2
+    - _SpecPower: 1
+    - _Specularity: 0.3
     - _VertexDisplacementScale: 0.1
     m_Colors:
-    - _Center: {r: 0, g: 0, b: 877.344, a: 0.025}
+    - _Center: {r: 0, g: 0, b: 89.84535, a: 0.05}
+    - _WaterColor: {r: 0.050980393, g: 0.22745098, b: 0.47058824, a: 1}

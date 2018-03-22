@@ -47,7 +47,6 @@ public partial class InfiniteOceanSimulator
 	{
 		public Transform TargetPlane;	
 		public Renderer renderWater;
-		public float ScalePaintSize = 0.045f;
 	}
 
 	[SerializeField] WaveSetting mWaveSetting;	
@@ -196,7 +195,7 @@ public partial class InfiniteOceanSimulator
 
 	void UpdatePrevPrev2Diff(float _diffX, float _diffZ)
 	{
-		Vector2 diff = new Vector2(_diffX * NORMALIZE_OCEAN_PLANE_RADIUS * 0.5f, _diffZ * NORMALIZE_OCEAN_PLANE_RADIUS * 0.5f);
+		Vector2 diff = new Vector2(_diffX * NORMALIZE_OCEAN_PLANE_HIT_LENGTH * 0.5f, _diffZ * NORMALIZE_OCEAN_PLANE_HIT_LENGTH * 0.5f);
 		mPrev2Diff = mPrevDiff + diff;
 		mPrevDiff = diff;
 

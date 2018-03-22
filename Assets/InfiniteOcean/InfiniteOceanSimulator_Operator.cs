@@ -8,7 +8,7 @@ public partial class InfiniteOceanSimulator
 	float mPitch = 5f;
 	float mYaw = 0f;
 	float mDist = 10f;
-	float mHeight = 4f;
+	float mHeight = 3f;
 
 	Vector3 mCenter;	
 
@@ -49,7 +49,7 @@ public partial class InfiniteOceanSimulator
 	void UpdateCenter(ref Vector3 _mov)
 	{
 		mCenter += _mov;
-		OutputMat.SetVector(ShaderPropertyCenter, new Vector4(mCenter.x,mCenter.y,mCenter.z,NORMALIZE_OCEAN_PLANE_RADIUS));
+		OutputMat.SetVector(ShaderPropertyCenter, new Vector4(mCenter.x,mCenter.y,mCenter.z,NORMALIZE_OCEAN_PLANE_HIT_LENGTH));
 
 		UpdatePrevPrev2Diff(_mov.x, _mov.z);
 	}

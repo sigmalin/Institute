@@ -15,15 +15,16 @@ public partial class InfiniteOceanSimulator
 
 	public Mesh MeshOcean { private set; get; }
 
-	const float OCEAN_PLANE_FOV = 120f;
+	const float OCEAN_PLANE_FOV = 60f;
 	const float OCEAN_PLANE_RADIUS = 40f;
 	const float OCEAN_PLANE_LOD_THRESHOLD = 20f;
 	const float OCEAN_PLANE_DISTANCE_NEAR = 5f;
-	const float OCEAN_PLANE_ANGLE_GAP = 2f;
+	const float OCEAN_PLANE_ANGLE_GAP = 1f;
 	const float OCEAN_PLANE_LENGTH_GAP = 0.3f;	
 	const float OCEAN_PLANE_LOD_LENGTH_GAP = 1f;	
 
-	const float NORMALIZE_OCEAN_PLANE_RADIUS = 1f / OCEAN_PLANE_RADIUS;
+	const float OCEAN_PLANE_HIT_LENGTH = 20f;
+	const float NORMALIZE_OCEAN_PLANE_HIT_LENGTH = 1f / OCEAN_PLANE_HIT_LENGTH;
 	readonly float EULER_2_THETA = Mathf.PI / 180.0f;	
 
 	void InitOceanPlane()
@@ -39,6 +40,9 @@ public partial class InfiniteOceanSimulator
 		MeshOcean = new Mesh();
 		MeshOcean.SetVertices(vertices);
 		MeshOcean.SetTriangles (indices, 0);
+
+		MeshOcean.RecalculateNormals();
+		MeshOcean.RecalculateTangents();
 
 		mOceanPlane.MeshOcean.sharedMesh = MeshOcean;
 	}
@@ -140,10 +144,10 @@ public partial class InfiniteOceanSimulator
 
 		Vector3 diff = _pt - mCenter;
 
-		if(Mathf.Abs(diff.x) < OCEAN_PLANE_RADIUS && Mathf.Abs(diff.z) < OCEAN_PLANE_RADIUS)
+		if(Mathf.Abs(diff.x) < OCEAN_PLANE_HIT_LENGTH && Mathf.Abs(diff.z) < OCEAN_PLANE_HIT_LENGTH)
 		{
-			_uv.x = (diff.x * NORMALIZE_OCEAN_PLANE_RADIUS) * 0.5f + 0.5f;
-			_uv.y = (diff.z * NORMALIZE_OCEAN_PLANE_RADIUS) * 0.5f + 0.5f;
+			_uv.x = (diff.x * NORMALIZE_OCEAN_PLANE_HIT_LENGTH) * 0.5f + 0.5f;
+			_uv.y = (diff.z * NORMALIZE_OCEAN_PLANE_HIT_LENGTH) * 0.5f + 0.5f;
 			return true;
 		}
 

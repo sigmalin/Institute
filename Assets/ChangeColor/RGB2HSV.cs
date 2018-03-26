@@ -6,7 +6,7 @@ using UnityEngine;
 ///
 // Alpha for Color Change Mask
 ///
-public class RGB2HSC : MonoBehaviour 
+public class RGB2HSV : MonoBehaviour 
 {
 	public Texture2D SrcRGB;
 
@@ -24,7 +24,7 @@ public class RGB2HSC : MonoBehaviour
 		Color[] cols = SrcRGB.GetPixels();
 
 		for(int Indx = 0; Indx < cols.Length; ++Indx)
-			RGB2HSV(ref cols[Indx]);
+			_RGB2HSV(ref cols[Indx]);
 
 		resTexture.SetPixels(cols);
 		resTexture.Apply();
@@ -33,7 +33,7 @@ public class RGB2HSC : MonoBehaviour
 		//System.IO.File.WriteAllBytes ("xxx.png", resTexture.EncodeToPNG());
 	}
 
-	void RGB2HSV(ref Color _col)
+	void _RGB2HSV(ref Color _col)
 	{
 		float h = 0f;
 		float s = 0f;

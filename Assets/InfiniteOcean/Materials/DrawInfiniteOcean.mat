@@ -45,5 +45,5 @@ Material:
     - _Specularity: 0.3
     - _VertexDisplacementScale: 0.1
     m_Colors:
-    - _Center: {r: 0, g: 0, b: 89.84535, a: 0.05}
+    - _Center: {r: 0, g: 0, b: 25.515099, a: 0.05}
     - _WaterColor: {r: 0.050980393, g: 0.22745098, b: 0.47058824, a: 1}

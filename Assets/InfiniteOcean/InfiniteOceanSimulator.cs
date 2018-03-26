@@ -20,6 +20,8 @@ public partial class InfiniteOceanSimulator : MonoBehaviour
 		InitOperator();
 
 		InitRoleList();
+
+		InitSplash();
 	}
 
 	void OnDestroy()
@@ -33,6 +35,8 @@ public partial class InfiniteOceanSimulator : MonoBehaviour
 		ReleaseOperator();
 
 		ReleaseRoleList();
+
+		ReleaseSplash();
 	}
 
 	void ReleaseCommandBuffer(ref CommandBuffer _cmdBuff)
@@ -79,5 +83,7 @@ public partial class InfiniteOceanSimulator : MonoBehaviour
 		UpdateRef();
 
 		UpdateOperator();
+
+		UpdateSplash();
 	}
 }

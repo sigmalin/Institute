@@ -85,11 +85,11 @@ public partial class InfiniteOceanSimulator
 
 		InputRT = new RenderTexture (WAVE_TEX_SIZE,WAVE_TEX_SIZE,0,RenderTextureFormat.R8);
 		RT = new RenderTexture (WAVE_TEX_SIZE,WAVE_TEX_SIZE,0,RenderTextureFormat.R8);
-		RT.wrapMode = TextureWrapMode.Clamp;
+		RT.wrapMode = TextureWrapMode.Repeat;
 		prevRT = new RenderTexture (WAVE_TEX_SIZE,WAVE_TEX_SIZE,0,RenderTextureFormat.R8);
-		prevRT.wrapMode = TextureWrapMode.Clamp;
+		prevRT.wrapMode = TextureWrapMode.Repeat;
 		prevprevRT = new RenderTexture (WAVE_TEX_SIZE,WAVE_TEX_SIZE,0,RenderTextureFormat.R8);
-		prevprevRT.wrapMode = TextureWrapMode.Clamp;
+		prevprevRT.wrapMode = TextureWrapMode.Repeat;
 
 		ClearRenderTexture (ref RT);
 		ClearRenderTexture (ref prevRT);

@@ -31,7 +31,10 @@ public partial class InfiniteOceanSimulator
 
 			for(int hitIndx = 0; hitIndx < mRoleList[roleIndx].Data.Pts.Length; ++hitIndx)
 			{
-				AddRaycasetList(mRoleList[roleIndx].Data.Pts[hitIndx], mRoleList[roleIndx].Data.Scale);
+				AddRaycasetList(mRoleList[roleIndx].Data.Pts[hitIndx], mRoleList[roleIndx].Data.Scale);		
+				
+				if(mRoleList[roleIndx].Data.Velocity != 0f)
+					AddSplash(mRoleList[roleIndx].Data.Pts[hitIndx].position);		
 			}
 		}
 	}

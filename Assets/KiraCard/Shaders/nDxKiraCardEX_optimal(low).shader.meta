@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 86dc22e077b1a5d47b76313c30b3d233
+timeCreated: 1531734071
+licenseType: Free
+ShaderImporter:
+  externalObjects: {}
+  defaultTextures:
+  - _MainTex: {instanceID: 0}
+  - _ArtEmission: {instanceID: 0}
+  - _FrameTex: {instanceID: 0}
+  - _FrameNormal: {instanceID: 0}
+  - _KiraTex: {instanceID: 0}
+  - _SubKiraTex: {instanceID: 0}
+  - _HoloTex: {instanceID: 0}
+  - _NisuTex: {instanceID: 0}
+  - _NisuNormal: {instanceID: 0}
+  - _SkyBox: {instanceID: 0}
+  - _BackFace: {instanceID: 0}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

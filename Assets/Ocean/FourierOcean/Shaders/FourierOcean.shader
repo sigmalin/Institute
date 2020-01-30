@@ -64,7 +64,6 @@
 				float3 posWorld : TEXCOORD0;                
 				float2 uv : TEXCOORD1;
 				float2 uvFoam : TEXCOORD2;
-				float jacobian : TEXCOORD3;
 				float3 normalDir : TEXCOORD4;
                 float3 tangentDir : TEXCOORD5;
                 float3 bitangentDir : TEXCOORD6;
@@ -101,7 +100,6 @@
 				float4 D = tex2Dlod(_Displacement, float4(o.uv, 0.0, 0.0)).xzyw;
 				float4 localPos = v.vertex;
 				localPos.xyz += D.xyz;
-				o.jacobian = D.w;
 
                 o.pos = UnityObjectToClipPos(localPos);
                 o.posWorld = mul(unity_ObjectToWorld, localPos);
@@ -154,8 +152,8 @@
 				float2 noise = (tex2D(_Noise,i.uv + _Time.xx).rr - 0.5) * 2;
 				float4 foam = tex2D(_Foam,i.uvFoam + noise*_Ratio*2).rrrr;
 
-				//result.rgb += foam.rgb * i.jacobian;
-				result += foam * i.jacobian;
+				float jacobian = tex2D(_Displacement,i.uv).a;				
+				result += foam * jacobian;
 
 				UNITY_APPLY_FOG(i.fogCoord, result);
 

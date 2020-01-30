@@ -50,7 +50,7 @@ void DFT(float2 xz, float t, out float2 h, out float2 d, out float3 n)
 			k_len = length(k);
 			k_dot_xz = dot(k, xz);
 
-			c = float2(cos(k_dot_xz), sin(k_dot_xz));
+			c = float2(cos(k_dot_xz), sin(k_dot_xz)); // c = exp(i*dot(k,x))
 
 			hTilde_t = hTilde(t, n_prime, m_prime);
 

@@ -62,7 +62,6 @@
 				float3 posWorld : TEXCOORD0;                
 				float2 uv : TEXCOORD1;
 				float2 uvFoam : TEXCOORD2;
-				float jacobian : TEXCOORD3;
 				UNITY_FOG_COORDS(7)
             };
 
@@ -101,7 +100,6 @@
 
                 o.pos = mul(UNITY_MATRIX_VP, p);
                 o.posWorld = p;
-				o.jacobian = D.w;
                 UNITY_TRANSFER_FOG(o,o.pos);
                 return o;
             }
@@ -147,8 +145,8 @@
 				float2 noise = (tex2D(_Noise,i.uv + _Time.xx).rr - 0.5) * 2;
 				float4 foam = tex2D(_Foam,i.uvFoam + noise*_Ratio*2).rrrr;
 
-				//result.rgb += foam.rgb * i.jacobian;
-				result += foam * i.jacobian;
+				float jacobian = tex2D(_Displacement,i.uv).a;				
+				result += foam * jacobian;
 											   
 				UNITY_APPLY_FOG(i.fogCoord, result);
 

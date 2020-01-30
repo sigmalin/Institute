@@ -55,12 +55,6 @@ void FFT_Spectrum(float2 uv, float t, out float2 height, out float4 slope, out f
 
 	//
 	
-	float2 xz = float2(n_prime, m_prime);
-	float k_dot_xz = dot(k, xz);
-	float2 c = float2(cos(k_dot_xz), sin(k_dot_xz));
-	height.x = height.x * c.x - height.y * c.y;
-	height.y = height.x * c.y + height.y * c.x;
-	
 	// slope = i*k*hTilde
 	// = i*(kx,kz)*(height.x + i*height.y)
 	// = i*(kx*height.x + i*kx*height.y,  kz*height.x + i*kz*height.y)

@@ -51,12 +51,12 @@
 				float sphereSize = 1;
 
 				float3 boxCenter = float3(0,0,0);
-				float3 boxSize = float3(0.125,0.125,0.125);
+				float3 boxSize = float3(0.0625,0.0625,0.0625);
 
 				float d_Sphere = sdSphere(pos - sphereCenter, sphereSize);
 				float d_Box = sdBox(mod(pos, 0.25) - 0.125, boxSize);
 
-				return max(d_Sphere, -d_Box);
+				return max(d_Sphere, d_Box);
 			}
 
             float dist_func(float3 pos)
@@ -127,21 +127,22 @@
 				
 				float3 ray = normalize(i.worldDirection);
 				float3 cur = cameraPos;
-				
+								
 				for(int i = 0; i < 256; ++i)
 				{
 					float D = dist_func(cur);
 					if(D < 0.0001)
 					{
 						float3 normalDirection = getNormal(cur);
-						float NdotL = dot(normalDirection, lightDirection);
-						col.rgb = NdotL + 0.1;
+						float NdotL = max(0.1, dot(normalDirection, lightDirection));
+						col.rgb = NdotL;
 
 						float shadow = genShadow(cur + normalDirection * 0.001, lightDirection);
 						col.rgb *= shadow;
 						col.a = 1;
 						break;
 					}
+
 					cur += ray * D;
 				}
 

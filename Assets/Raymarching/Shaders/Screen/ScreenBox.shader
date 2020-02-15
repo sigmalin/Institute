@@ -1,4 +1,4 @@
-﻿Shader "Raymarching/Repeat"
+﻿Shader "Raymarching/Screen/Box"
 {
     Properties
     {
@@ -36,25 +36,19 @@
             struct v2f
             {
                 float2 uv : TEXCOORD0;
+				float3 worldDirection : TEXCOORD1;
                 float4 vertex : SV_POSITION;
             };
-			
-			float3 mod(float3 a, float3 b)   
-			{   
-				return a - b*floor(a / b);
-			}
 
-			float3 trans(float3 pos)
+			float4x4  _ClipToWorld;
+
+            float dist_func(float3 pos, float3 size)
 			{
-				return mod(pos, 4) - 2;
+				float3 q = abs(pos) - size;
+				return length(max(q, 0.0)) + min(max(q.x, max(q.y,q.z)), 0.0);
 			}
 
-            float dist_func(float3 pos, float size)
-			{
-				return length(trans(pos)) - size;
-			}
-
-			float3 getNormal(float3 pos, float size)
+			float3 getNormal(float3 pos, float3 size)
 			{
 				float ep = 0.0001;
 
@@ -72,30 +66,35 @@
             v2f vert (appdata v)
             {
                 v2f o;
-                o.vertex = UnityObjectToClipPos(v.vertex);
-                o.uv = v.uv;
+
+				//o.vertex = v.vertex * float4(2, 2, 1, 1) - float4(1, 1, 0, 0);
+				o.vertex = UnityObjectToClipPos(v.vertex);
+				o.uv = v.uv;
+
+				//float4 clip = float4((v.uv.xy * 2.0f - 1.0f) * float2(1, -1), 0.0f, 1.0f);
+				float4 clip = float4(o.vertex.xy, 0.0, 1.0);
+				o.worldDirection = mul(_ClipToWorld, clip) -_WorldSpaceCameraPos;                
                 return o;
             }
 
             fixed4 frag (v2f i) : SV_Target
             {
 				float4 col = 0;
-
-				float3 cameraPos = float3(0,0,-10);
-				float3 worldPos = float3(i.uv * 2 - 1,0);
+				
+				float3 cameraPos = _WorldSpaceCameraPos.xyz;
 				float3 lightDirection = _WorldSpaceLightPos0.xyz;
 				
-				float3 ray = normalize(worldPos - cameraPos);
+				float3 ray = normalize(i.worldDirection);
 				float3 cur = cameraPos;
 				
-				float sphereSize = 0.5;
+				float3 boxSize = 0.25;
 
 				for(int i = 0; i < 128; ++i)
 				{
-					float D = dist_func(cur, sphereSize);
+					float D = dist_func(cur, boxSize);
 					if(D < 0.0001)
 					{
-						float3 normalDirection = getNormal(cur, sphereSize);
+						float3 normalDirection = getNormal(cur, boxSize);
 						float NdotL = dot(normalDirection, lightDirection);
 						col.rgb = NdotL + 0.1;
 						col.a = 1;

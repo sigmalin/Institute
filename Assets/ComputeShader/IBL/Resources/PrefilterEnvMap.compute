@@ -1,0 +1,62 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_PrefilterEnvMap
+// https://learnopengl.com/PBR/IBL/Specular-IBL
+#include "..\Shaders\Hammersley.cginc"
+#include "..\Shaders\ImportanceSample.cginc"
+#include "..\Shaders\Cubemap.cginc"
+#include "..\Shaders\ReinhardToneMapping.cginc"
+
+RWStructuredBuffer<float4> Result;
+
+TextureCube<float4> cubemap;
+SamplerState _LinearClamp;
+
+int face;
+int cubeSize;
+float roughness;
+
+float3 PrefilterEnvMap(float3 R)
+{
+	float3 N = R;
+	float3 V = R;
+
+	float3 prefiliteredColor = 0.0;
+	float TotalWeight = 0.0;
+
+	const uint NumSamples = 1024u;
+
+	[loop]
+	for(uint i = 0u; i < NumSamples; ++i)
+	{
+		float2 Xi = Hammersley(i, NumSamples);
+		float3 H = ImportanceSampleGGX(Xi, roughness, N);
+		float3 L = 2.0 * dot(V, H) * H - V;
+
+		float NdotL = saturate(dot(N, L));
+
+		[branch]
+		if(NdotL > 0.0)
+		{
+			prefiliteredColor += filtering_cube_map(cubemap, _LinearClamp, L).rgb * NdotL;
+			TotalWeight += NdotL;
+		}		
+	}
+
+	return prefiliteredColor / TotalWeight;
+}
+
+[numthreads(8,8,1)]
+void CS_PrefilterEnvMap (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int indx = id.y * cubeSize + id.x;
+
+	float size = float(cubeSize - 1);
+
+	float2 uv = float2(id.x / size, id.y / size);
+	float3 normal = calc_normal(face, uv);
+
+	float3 prefilterEnv = Reinhard_tone_mapping(PrefilterEnvMap(normal));
+
+    Result[indx] = float4(prefilterEnv, 1.0);
+}

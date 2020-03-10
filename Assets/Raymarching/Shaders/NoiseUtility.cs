@@ -1,4 +1,5 @@
 ﻿//https://www.ronja-tutorials.com/2018/10/06/tiling-noise.html
+//https://flafla2.github.io/2014/08/09/perlinnoise.html
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -417,7 +418,6 @@ public class NoiseUtility
             final += _func(st, period) * amplitude;
             st.x *= Scale;
             st.y *= Scale;
-            period *= Scale;
             maxAmplitude += amplitude;
             amplitude *= Persistence;
         }
@@ -439,7 +439,6 @@ public class NoiseUtility
             st.x *= Scale;
             st.y *= Scale;
             st.z *= Scale;
-            period *= Scale;
             maxAmplitude += amplitude;
             amplitude *= Persistence;
         }

@@ -8,6 +8,7 @@ public class RaymarchingOnScreen : MonoBehaviour
     CommandBuffer mCmd;
 
     public Material mDrawer;
+    public bool mUseScaleBuffer;
 
     Material mBlit;
     RenderTexture mCloud;
@@ -39,12 +40,15 @@ public class RaymarchingOnScreen : MonoBehaviour
 
     void OnDestroy()
     {
-        if(Camera.main != null) Camera.main.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, mCmd);
-
         ClearAllRT();
 
         if (mCmd != null)
         {
+            if (Camera.main != null)
+            {
+                Camera.main.RemoveCommandBuffer(CameraEvent.BeforeForwardAlpha, mCmd);
+            }
+
             mCmd.Clear();
             mCmd.Release();
             mCmd = null;
@@ -100,7 +104,10 @@ public class RaymarchingOnScreen : MonoBehaviour
         Camera.main.SetTargetBuffers(mColorBuffer.colorBuffer, mDepthBuffer.depthBuffer);
         mDrawer.SetTexture("_DepthTexture", mDepthBuffer);
 
-        mCloud = new RenderTexture(mBufferWidth >> 2, mBufferHeight >> 2, 0);
+        if(mUseScaleBuffer == true)
+            mCloud = new RenderTexture(mBufferWidth >> 2, mBufferHeight >> 2, 0);
+        else
+            mCloud = new RenderTexture(mBufferWidth, mBufferHeight, 0);
         mCloud.name = "Cloud";
 
         mBlit.SetTexture("_BackGround", mColorBuffer);

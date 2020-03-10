@@ -1,0 +1,70 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_DiffuseIrradiance
+
+#include "..\Shaders\Cubemap.cginc"
+#include "..\Shaders\ReinhardToneMapping.cginc"
+
+RWStructuredBuffer<float4> Result;
+
+TextureCube<float4> cubemap;
+SamplerState _LinearClamp;
+
+int face;
+int cubeSize;
+
+#ifndef PI
+#define PI 3.1415926536898
+#endif
+
+float3 calc_cartesian(float phi, float theta) 
+{
+	return float3(sin(theta) * cos(phi), sin(theta) * sin(phi), cos(theta));
+}
+
+[numthreads(8,8,1)]
+void CS_DiffuseIrradiance (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int indx = id.y * cubeSize + id.x;
+
+	float size = float(cubeSize - 1);
+
+	float2 uv = float2(id.x / size, id.y / size);
+	float3 normal = calc_normal(face, uv);
+	
+	normal = normalize(normal);
+	float3 up = float3(0.0, 1.0, 0.0);
+	float3 right = cross(up, normal);
+	right = normalize(right);
+	up = cross(normal, right);
+	up = normalize(up);
+
+	float two_PI = 2.0 * PI;
+	float half_PI = 0.5 * PI;
+	
+	float3 irradiance = 0.0;  
+
+	float sampleDelta = 0.025;
+	float nrSample = 0.0;
+	
+	[loop]
+	for(float phi = 0.0; phi < two_PI; phi += sampleDelta)
+	{
+		for(float theta = 0.0; theta < half_PI; theta += sampleDelta)
+		{
+			// spherical to cartesian (in tangent space)
+			float3 tangentSample = calc_cartesian(phi, theta);
+			// tangent space to world
+			float3 sampleVec = tangentSample.x * right + tangentSample.y * up + tangentSample.z * normal;
+
+			irradiance += filtering_cube_map(cubemap, _LinearClamp, sampleVec).rgb * cos(theta) * sin(theta);
+			nrSample += 1.0;
+		}
+	}
+
+	irradiance = PI * irradiance * (1.0 / nrSample);
+
+	irradiance = Reinhard_tone_mapping(irradiance);
+
+    Result[indx] = float4(irradiance, 1.0);
+}

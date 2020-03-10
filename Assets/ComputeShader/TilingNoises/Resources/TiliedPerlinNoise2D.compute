@@ -1,0 +1,37 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_PerlinNoise2D
+
+#include "..\TilingNoises\Shaders\TilingNoiseCommon.cginc"
+#include "..\TilingNoises\Shaders\TilingPerlinNoise.cginc"
+
+RWStructuredBuffer<float> Result;
+
+float fBm(float2 st, float period)
+{
+	if(Octaves == 0) return 0.0;
+
+	float final = 0.0;
+	float amplitude = 0.5;
+	float maxAmplitude = 0.0;
+
+	for (int i = 0; i < Octaves; ++i)
+	{
+		final += TiliedPerlinNoise2D(st, period) * amplitude;
+		st *= Scale;
+		maxAmplitude += amplitude;
+		amplitude *= Persistence;
+	}
+
+	return final / maxAmplitude;
+}
+
+
+[numthreads(8,8,1)]
+void CS_PerlinNoise2D (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int indx = id.y * TexWidth + id.x;
+	float2 st = float2(id.x / ((float)TexWidth-1.0), id.y / ((float)TexHeight-1.0));
+	
+    Result[indx] = fBm(st, Period);
+}

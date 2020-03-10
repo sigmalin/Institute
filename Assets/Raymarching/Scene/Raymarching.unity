@@ -207,10 +207,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 915358834}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 8c4f0226ee0b80f42b3bc9af8d4b5a75, type: 3}
+  m_Script: {fileID: 11500000, guid: 6fc60e2892876ce499ffe9789ff10768, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  mDrawer: {fileID: 2100000, guid: 99bf810d8e49fa74683b9e7be02c56b9, type: 2}
+  mDrawer: {fileID: 2100000, guid: 58ddb43bd7353f146b46aeaa750f446a, type: 2}
 --- !u!4 &915358836
 Transform:
   m_ObjectHideFlags: 0
@@ -301,7 +301,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1373365061}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: -4}
+  m_LocalPosition: {x: 0, y: 4, z: -4}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}

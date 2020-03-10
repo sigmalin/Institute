@@ -1,0 +1,17 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+#include "..\Shaders\Hammersley.cginc"
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWTexture2D<float4> Result;
+
+[numthreads(8,1,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	float2 uv = Hammersley(id.x, 1024u) * 1024.0;
+
+    Result[uv] = float4(1.0, 0.0, 0.0, 0.0);
+}

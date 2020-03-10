@@ -35,7 +35,7 @@ public class SeamlessNoiseMaker : EditorWindow
     float mPersistence = 0.5f;
     float mScale = 2f;
 
-    [MenuItem("sigmalin/Institute/SeamlessNoiseMaker")]
+    [MenuItem("sigmalin/Institute/Noise/SeamlessNoiseMaker")]
     static void OpenSeamlessNoiseMaker()
     {
         window = (SeamlessNoiseMaker)EditorWindow.GetWindow(typeof(SeamlessNoiseMaker));

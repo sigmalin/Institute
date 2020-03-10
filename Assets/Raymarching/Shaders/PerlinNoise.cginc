@@ -483,7 +483,7 @@ float FractalPerlin(in float3 st)
 
 	for(int i = 0; i < OCTAVES; ++i)
 	{
-		value += amplitude * snoise(st);
+		value += amplitude * (snoise(st) + 1) * 0.5;
 				
 		st *= LACUMARITY;
 		amplitude *= GAIN;

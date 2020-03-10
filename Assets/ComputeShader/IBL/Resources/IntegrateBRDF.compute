@@ -1,0 +1,74 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_IntegrateBRDF
+// https://learnopengl.com/PBR/IBL/Specular-IBL
+#include "..\Shaders\Hammersley.cginc"
+#include "..\Shaders\ImportanceSample.cginc"
+
+// Create a RenderTexture with enableRandomWrite flag and set it
+// with cs.SetTexture
+RWStructuredBuffer<float4> Result;
+
+int texSize;
+
+float G_GGX(float theta, float a)
+{
+	float k = (a * a) / 2.0;	// for IBL
+	return theta / (theta * (1.0 - k) + k);
+}
+
+float G_Smith(float NdotL, float NdotV, float roughness)
+{
+	return G_GGX(NdotL, roughness) * G_GGX(NdotV, roughness);
+}
+
+float2 IntegrateBRDF(float roughness, float NdotV)
+{
+	float3 N = float3(0.0, 0.0, 1.0);	// tangent-space
+
+	float3 V;
+	V.x = sqrt(1.0 - NdotV * NdotV);	// sin
+	V.y = 0.0;
+	V.z = NdotV;						// cos
+
+	float A = 0.0;
+	float B = 0.0;
+
+	const uint NumSamples = 1024u;
+
+	[loop]
+	for(uint i = 0u; i < NumSamples; ++i)
+	{
+		float2 Xi = Hammersley(i, NumSamples);
+		float3 H = ImportanceSampleGGX(Xi, roughness, N);
+		float3 L = 2.0 * dot(V, H) * H - V;
+
+		float NdotL = saturate(L.z);
+		float NdotH = saturate(H.z);
+		float VdotH = saturate(dot(V, H));
+
+		[branch]
+		if(NdotL > 0.0)
+		{
+			float G = G_Smith(NdotL, NdotV, roughness);
+			float G_Vis = G * VdotH / (NdotV * NdotH);
+			float Fc = pow(1 - VdotH, 5);
+			
+			A += (1.0 - Fc) * G_Vis;
+			B += Fc * G_Vis;
+		}		
+	}
+
+	return float2(A, B) / float(NumSamples);
+}
+
+[numthreads(8,8,1)]
+void CS_IntegrateBRDF (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	float NdotV = float(id.x) / (texSize - 1);
+	float roughness = float(id.y) / (texSize - 1);
+
+	int indx = id.y * texSize + id.x;
+
+    Result[indx] = float4(IntegrateBRDF(roughness, NdotV), 0.0, 0.0);
+}

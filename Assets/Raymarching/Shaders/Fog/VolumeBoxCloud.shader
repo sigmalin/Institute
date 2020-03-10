@@ -37,7 +37,6 @@ Shader "Raymarching/Fog/VolumeBoxCloud"
 			#include "AutoLight.cginc"
             #include "Lighting.cginc"
 			#include "..\PerlinNoise.cginc"
-			#include "..\WorleyNoise.cginc"
 			#include "..\VoronoiNoise.cginc"
 			
             struct appdata
@@ -66,14 +65,6 @@ Shader "Raymarching/Fog/VolumeBoxCloud"
 
             float4x4  _ClipToWorld;
 						
-			float noise(float3 pos)
-			{
-				float p = FractalPerlin(pos * 0.125);
-				float w1 = 1 - Worley(pos * 1, 1);
-
-				return p * _A  + w1 * _B;
-			}
-
 			// Returns (dstToBox, dstInsideBox). If ray misses box, dstInsideBox will be zero
             float2 rayBoxDst(float3 boundsMin, float3 boundsMax, float3 rayOrigin, float3 invRaydir) {
                 // Adapted from: http://jcgt.org/published/0007/03/04/
@@ -152,8 +143,8 @@ Shader "Raymarching/Fog/VolumeBoxCloud"
 				}
 
 				float transmittance = exp(-totalDensity);
-								
-                return float4(0,0,0,transmittance);
+				float3 col = lerp(_FogColor.rgb, 0, transmittance);
+                return float4(col,transmittance);
             }
             ENDCG
         }

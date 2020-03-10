@@ -1,0 +1,44 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!21 &2100000
+Material:
+  serializedVersion: 6
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: ProceduralPlanets_PlanetSphere
+  m_Shader: {fileID: 4800000, guid: 1b93d93059e08484bab8a60f51b0b0c4, type: 3}
+  m_ShaderKeywords: 
+  m_LightmapFlags: 4
+  m_EnableInstancingVariants: 0
+  m_DoubleSidedGI: 0
+  m_CustomRenderQueue: -1
+  stringTagMap: {}
+  disabledShaderPasses: []
+  m_SavedProperties:
+    serializedVersion: 3
+    m_TexEnvs:
+    - _Perlin:
+        m_Texture: {fileID: 11700000, guid: db2bb03797684d34aa5a85c0eec48b8f, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    - _Voronoi:
+        m_Texture: {fileID: 11700000, guid: f8ce3c75d73e3cc459fadfd997e3f737, type: 2}
+        m_Scale: {x: 1, y: 1}
+        m_Offset: {x: 0, y: 0}
+    m_Floats:
+    - _A: 0.5
+    - _B: 0.5
+    - _DarknessThreshold: 0.02
+    - _DensityMultiplier: 4
+    - _DensityThreshold: 0.1
+    - _LightAbsorption: 0.02
+    - _NumSteps: 16
+    - _PhaseVal: 1
+    - _PlanetRadius: 2
+    - _SkyThickness: 2
+    - _TA: 1
+    - _TB: 1
+    m_Colors:
+    - _FogColor: {r: 0.65, g: 0.7, b: 0.75, a: 1}

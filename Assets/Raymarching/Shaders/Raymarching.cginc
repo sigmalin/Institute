@@ -80,8 +80,11 @@ float3 twist_Z( float3 p, float power )
 }
 
 float smoothMin(float d1, float d2, float k){
-    float h = exp(-k * d1) + exp(-k * d2);
-    return -log(h) / k;
+    //float h = exp(-k * d1) + exp(-k * d2);
+    //return -log(h) / k;
+
+	float h = max(k - abs(d1-d2), 0.0) / k;
+	return min(d1, d2) - h*h*h*k/6.0;
 }
 
 float sdSphere( float3 p, float s )

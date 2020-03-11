@@ -130,9 +130,9 @@
 				
 				col.rgb = directLight + indirectLight;
 
-				fixed shadow = SHADOW_ATTENUATION(i);
-				shadow = (shadow + 1) * 0.5;
-				col.rgb *= shadow;
+				UNITY_LIGHT_ATTENUATION(atten, i, i.posWorld)
+				atten = (atten + 1) * 0.5;
+				col.rgb *= atten;
 
 				col.rgb = ACES_tone_mapping(col.rgb);//Filmic_tone_mapping(col.rgb);
 

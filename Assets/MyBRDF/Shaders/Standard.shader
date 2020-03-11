@@ -121,6 +121,7 @@
 				ibl.albedo = albedo;
 				ibl.F0 = f0;
 				ibl.normalDirection = normalDirection;
+				ibl.reflectDirection = 2.0 * NdotV * normalDirection - viewDirection;
 				ibl.NdotV = NdotV;
 				ibl.alphaRoughness = alphaRoughness;
 				ibl.metallic = _metallic;

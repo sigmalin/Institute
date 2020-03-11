@@ -5,20 +5,18 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 
-public class PrefilterEnvMapMaker : IBLMaker
+public class EncodeSkyBoxMaker : IBLMaker
 {
-    static PrefilterEnvMapMaker window;
+    static EncodeSkyBoxMaker window;
 
     public Cubemap cubeEnvironment;
 
     int mCubeSize = 1024;
 
-    const int MIN_MAP_LEVEL = 5;
-
-    [MenuItem("sigmalin/Institute/IBL/PrefilterEnvMapMaker")]
-    static void OpenPrefilterEnvMapMaker()
+    [MenuItem("sigmalin/Institute/IBL/EncodeSkyBoxMaker")]
+    static void OpenEncodeSkyBoxMaker()
     {
-        window = (PrefilterEnvMapMaker)EditorWindow.GetWindow(typeof(PrefilterEnvMapMaker));
+        window = (EncodeSkyBoxMaker)EditorWindow.GetWindow(typeof(EncodeSkyBoxMaker));
     }
 
     void OnGUI()
@@ -29,7 +27,7 @@ public class PrefilterEnvMapMaker : IBLMaker
             return;
         }
 
-        ObjectField<Cubemap>("Baked Environment Cube (HDR)", ref cubeEnvironment, false);
+        ObjectField<Cubemap>("Encode Environment Cube (HDR)", ref cubeEnvironment, false);
         if (cubeEnvironment == null) return;
 
         IntPow2Field("Cube Size", ref mCubeSize);
@@ -37,16 +35,16 @@ public class PrefilterEnvMapMaker : IBLMaker
 
         if (GUILayout.Button("Generate"))
         {
-            ComputePrefilterEnvMap();
+            ComputeEncodeSkyBox();
         }
     }
 
-    void ComputePrefilterEnvMap()
+    void ComputeEncodeSkyBox()
     {
-        ComputeShader cs = Resources.Load<ComputeShader>("PrefilterEnvMap");
+        ComputeShader cs = Resources.Load<ComputeShader>("EncodeSkyBox");
         if (cs == null) return ;
 
-        int kanel = cs.FindKernel("CS_PrefilterEnvMap");
+        int kanel = cs.FindKernel("CS_EncodeSkyBox");
 
         CubemapFace[] faces = new CubemapFace[]
         {
@@ -58,28 +56,25 @@ public class PrefilterEnvMapMaker : IBLMaker
             CubemapFace.NegativeZ,
         };
 
-        Cubemap clone = new Cubemap(mCubeSize, TextureFormat.RGBA32, true);
+        Cubemap clone = new Cubemap(mCubeSize, TextureFormat.RGBA32, false);
 
         for (int i = 0; i < faces.Length; ++i)
         {
-            for (int j = 0; j < MIN_MAP_LEVEL; ++j)
-            {
-                Color[] cols;
-                CreateFace(cs, kanel, i, j, out cols);
-                clone.SetPixels(cols, faces[i], j);
-            }
+            Color[] cols;
+            CreateFace(cs, kanel, i, out cols);
+            clone.SetPixels(cols, faces[i]);
         }
 
         clone.Apply();
         SaveTexture<Cubemap>(clone, GetPath());
     }
 
-    void CreateFace(ComputeShader _cs, int _kanel, int _face, int _mipmap, out Color[] _cols)
+    void CreateFace(ComputeShader _cs, int _kanel, int _face, out Color[] _cols)
     {
         _cols = null;
         if (6 <= _face) return;
 
-        int size = Mathf.Max(1, mCubeSize >> _mipmap);
+        int size = mCubeSize;
 
         var buffer = new ComputeBuffer(size * size, sizeof(float) * 4);
 
@@ -87,7 +82,6 @@ public class PrefilterEnvMapMaker : IBLMaker
         _cs.SetBuffer(_kanel, "Result", buffer);
         _cs.SetInt("face", _face);
         _cs.SetInt("cubeSize", size);
-        _cs.SetFloat("roughness", ((float)(_mipmap)) / ((float)(MIN_MAP_LEVEL-1)));
 
         uint sizeX, sizeY, sizeZ;
         _cs.GetKernelThreadGroupSizes(
@@ -113,7 +107,7 @@ public class PrefilterEnvMapMaker : IBLMaker
             System.IO.Directory.CreateDirectory(path);
         }
 
-        string output = string.Format("{0}{1}_PrefilterEnvMap_{2}.asset", path, cubeEnvironment.name, mCubeSize);
+        string output = string.Format("{0}{1}_EncodeSkyBox_{2}.asset", path, cubeEnvironment.name, mCubeSize);
 
         if (System.IO.File.Exists(output) == true)
         {

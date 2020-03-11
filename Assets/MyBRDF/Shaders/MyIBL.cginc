@@ -20,6 +20,7 @@ struct IBL_Data
 	float3 albedo;
 	float3 F0;
 	float3 normalDirection;
+	float3 reflectDirection;
 	float NdotV;
 	float alphaRoughness;
 	float metallic;
@@ -41,7 +42,7 @@ float3 DiffuseIrradiance(IBL_Data ibl)
 
 float3 SpecularIBL(IBL_Data ibl)
 {
-	float3 PrefilteredColor = UNITY_SAMPLE_TEXCUBE_LOD(_PrefiliterEnv, ibl.normalDirection, ibl.alphaRoughness * UNITY_SPECCUBE_LOD_STEPS).rgb;
+	float3 PrefilteredColor = UNITY_SAMPLE_TEXCUBE_LOD(_PrefiliterEnv, ibl.reflectDirection, ibl.alphaRoughness * UNITY_SPECCUBE_LOD_STEPS).rgb;
 	PrefilteredColor = Inv_Reinhard_tone_mapping(PrefilteredColor);
 
 	float2 EnvBRDF = tex2Dlod(_IntegrateBRDF, float4(ibl.NdotV, ibl.alphaRoughness, 0.0, 0.0)).rg;

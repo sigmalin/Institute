@@ -53,7 +53,7 @@
 				LIGHTING_COORDS(7,8)
 				UNITY_FOG_COORDS(9)
             };
-
+			
             sampler2D _baseColor;
 			float4 _baseColor_ST;
 
@@ -79,7 +79,7 @@
             fixed4 frag (v2f i) : SV_Target
             {
 				fixed4 col = tex2D(_baseColor, i.uv);
-
+				
 				float4 metallic_gloss = tex2D(_MetallicGlossMap, i.uv);
 				float metallic = metallic_gloss.r;
 				float roughness = max(0.089, 1 - metallic_gloss.a); // avoid half-float(fp16) issue, 0.045 for single precision floats (fp32). 
@@ -89,7 +89,7 @@
 				#ifdef UNITY_COLORSPACE_GAMMA
 				col.rgb = GammaToLinearSpace (col.rgb);
 				#endif
-
+				
 				float3 nor = UnpackNormal(tex2D(_bumpMap,i.uv));
 
 				float3x3 tangentTransform = float3x3( i.tangentDir, i.bitangentDir, i.normalDir);
@@ -119,11 +119,12 @@
 				brdf.alphaRoughness = alphaRoughness;
 
 				float3 directLight = BRDF(brdf);
-
+				
 				IBL_Data ibl;
 				ibl.albedo = albedo;
 				ibl.F0 = f0;
 				ibl.normalDirection = normalDirection;
+				ibl.reflectDirection = 2.0 * NdotV * normalDirection - viewDirection;
 				ibl.NdotV = NdotV;
 				ibl.alphaRoughness = alphaRoughness;
 				ibl.metallic = metallic;
@@ -137,7 +138,7 @@
 				UNITY_LIGHT_ATTENUATION(atten,i,i.posWorld);
 				atten = (atten + 1) * 0.5;
 				col.rgb *= atten;
-
+				
 				col.rgb = ACES_tone_mapping(col.rgb);//Filmic_tone_mapping(col.rgb);
 
 				#ifdef UNITY_COLORSPACE_GAMMA

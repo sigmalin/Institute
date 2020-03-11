@@ -1,0 +1,30 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_EncodeSkyBox
+#include "..\Shaders\Cubemap.cginc"
+#include "..\Shaders\ReinhardToneMapping.cginc"
+
+RWStructuredBuffer<float4> Result;
+
+TextureCube<float4> cubemap;
+SamplerState _LinearClamp;
+
+int face;
+int cubeSize;
+
+[numthreads(8,8,1)]
+void CS_EncodeSkyBox (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int indx = id.y * cubeSize + id.x;
+
+	float size = float(cubeSize - 1);
+
+	float2 uv = float2(id.x / size, id.y / size);
+	float3 normal = calc_normal(face, uv);
+
+	float4 col = filtering_cube_map(cubemap, _LinearClamp, normal);
+
+	col.rgb = Reinhard_tone_mapping(col.rgb);
+
+    Result[indx] = col;
+}

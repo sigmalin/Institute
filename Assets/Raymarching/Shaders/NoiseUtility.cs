@@ -379,12 +379,12 @@ public class NoiseUtility
 
         float x1, x2, y1, y2;
         x1 = Lerp(u,
-                Grad(aaa, x, y),
-                Grad(baa, x - 1, y)
+                Grad(aaa, x, y, z),
+                Grad(baa, x - 1, y, z)
                 );
         x2 = Lerp(u,
-                Grad(aba, x, y - 1),
-                Grad(bba, x - 1, y - 1)
+                Grad(aba, x, y - 1, z),
+                Grad(bba, x - 1, y - 1, z)
                 );
 
         y1 = Lerp(v, x1, x2);
@@ -409,16 +409,16 @@ public class NoiseUtility
     {
         if (Octaves == 0) return 0;
 
-        float final = 0f;
-        float amplitude = 0.5f;
-        float maxAmplitude = 0f;
+        float final = 0.0f;
+        float amplitude = 1.0f;
+        float frequency = 1.0f;
+        float maxAmplitude = 0.0f;
 
         for (int i = 0; i < Octaves; ++i)
         {
-            final += _func(st, period) * amplitude;
-            st.x *= Scale;
-            st.y *= Scale;
+            final += _func(new Vector2(st.x * frequency, st.y * frequency), period) * amplitude;
             maxAmplitude += amplitude;
+            frequency *= Scale;            
             amplitude *= Persistence;
         }
 
@@ -429,17 +429,16 @@ public class NoiseUtility
     {
         if (Octaves == 0) return 0;
 
-        float final = 0f;
-        float amplitude = 0.5f;
-        float maxAmplitude = 0f;
+        float final = 0.0f;
+        float amplitude = 1.0f;
+        float frequency = 1.0f;
+        float maxAmplitude = 0.0f;
 
-        for(int i = 0; i < Octaves; ++i)
+        for (int i = 0; i < Octaves; ++i)
         {
-            final += _func(st, period) * amplitude;
-            st.x *= Scale;
-            st.y *= Scale;
-            st.z *= Scale;
+            final += _func(new Vector3(st.x * frequency, st.y * frequency, st.z * frequency), period) * amplitude;
             maxAmplitude += amplitude;
+            frequency *= Scale;
             amplitude *= Persistence;
         }
 

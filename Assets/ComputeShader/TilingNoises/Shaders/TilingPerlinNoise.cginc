@@ -98,13 +98,13 @@ float TiliedPerlinNoise3D(float3 st, float period)
 
 	float x1, x2, y1, y2;
 	x1 = lerp(
-			Grad(aaa, x, y),
-			Grad(baa, x - 1, y),
+			Grad(aaa, x, y, z),
+			Grad(baa, x - 1, y, z),
 			u
 			);
 	x2 = lerp(
-			Grad(aba, x, y - 1),
-			Grad(bba, x - 1, y - 1),
+			Grad(aba, x, y - 1, z),
+			Grad(bba, x - 1, y - 1, z),
 			u
 			);
 

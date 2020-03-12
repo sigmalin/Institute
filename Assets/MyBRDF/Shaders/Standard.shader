@@ -117,6 +117,9 @@
 
 				float3 directLight = BRDF(brdf);
 
+				UNITY_LIGHT_ATTENUATION(atten, i, i.posWorld)
+				directLight *= atten;
+
 				IBL_Data ibl;
 				ibl.albedo = albedo;
 				ibl.F0 = f0;
@@ -129,10 +132,6 @@
 				float3 indirectLight = IBL(ibl);
 				
 				col.rgb = directLight + indirectLight;
-
-				UNITY_LIGHT_ATTENUATION(atten, i, i.posWorld)
-				atten = (atten + 1) * 0.5;
-				col.rgb *= atten;
 
 				col.rgb = ACES_tone_mapping(col.rgb);//Filmic_tone_mapping(col.rgb);
 

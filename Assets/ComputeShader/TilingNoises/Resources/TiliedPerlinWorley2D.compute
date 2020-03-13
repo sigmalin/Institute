@@ -1,0 +1,16 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_PerlinWorley2D
+
+#include "..\Shaders\TilingPerlinWorleyNoise.cginc"
+
+RWStructuredBuffer<float> Result;
+
+[numthreads(8,8,1)]
+void CS_PerlinWorley2D (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int indx = (id.y * TexWidth) + id.x;
+	float3 st = float3(id.x / ((float)TexWidth-1.0), id.y / ((float)TexHeight-1.0), 0.0);
+	
+    Result[indx] = TilingPerlinWorley(st, Period);
+}

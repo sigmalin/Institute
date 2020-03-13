@@ -5,21 +5,12 @@ using System.Linq;
 using UnityEngine;
 using UnityEditor;
 
-public class SeamlessNoiseMakerGPU : EditorWindow
+public class CurlNoiseMakerGPU : EditorWindow
 {
-    static SeamlessNoiseMakerGPU window;
+    static CurlNoiseMakerGPU window;
 
     float mRandomSeed = 114514.1515f;
     int mTexSize = 64;
-
-    enum eNoiseType
-    {
-        None,
-        Perlin,
-        Voronoi,
-        Cellular,
-        PerlinWorley,
-    };
 
     enum eNoiseDim
     {
@@ -31,7 +22,6 @@ public class SeamlessNoiseMakerGPU : EditorWindow
 
     class NoiseModule
     {
-        public eNoiseType eType;
         public bool bFBM;
         public int iPeriod;
         public int iOctaves;
@@ -40,7 +30,6 @@ public class SeamlessNoiseMakerGPU : EditorWindow
 
         public NoiseModule()
         {
-            eType = eNoiseType.Perlin;
             bFBM = false;
             iPeriod = 4;
             iOctaves = 4;
@@ -49,12 +38,12 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         }
     }
 
-    NoiseModule[] noises;
+    NoiseModule noises;
 
-    [MenuItem("sigmalin/Institute/Noise/SeamlessNoiseMaker(GPU)")]
-    static void OpenSeamlessNoiseMakerGPU()
+    [MenuItem("sigmalin/Institute/Noise/CurlNoiseMaker(GPU)")]
+    static void OpenCurlNoiseMakerGPU()
     {
-        window = (SeamlessNoiseMakerGPU)EditorWindow.GetWindow(typeof(SeamlessNoiseMakerGPU));
+        window = (CurlNoiseMakerGPU)EditorWindow.GetWindow(typeof(CurlNoiseMakerGPU));
     }
 
     void OnInspectorUpdate()
@@ -72,9 +61,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
 
         if (noises == null)
         {
-            noises = new NoiseModule[4];
-            for (int i = 0; i < 4; ++i)
-                noises[i] = new NoiseModule();
+            noises = new NoiseModule();
         }
 
         EditorGUILayout.BeginVertical("Box");
@@ -91,10 +78,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
 
         mDim = (eNoiseDim)EditorGUILayout.EnumPopup("Texture Dimension:", mDim);
 
-        SettingNoise("Channel (R)", noises[0]);
-        SettingNoise("Channel (G)", noises[1]);
-        SettingNoise("Channel (B)", noises[2]);
-        SettingNoise("Channel (A)", noises[3]);
+        SettingNoise("Curl Noise Setting", noises);
 
         if (GUILayout.Button("Generate"))
         {
@@ -120,7 +104,6 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         EditorGUILayout.LabelField(_Title);
 
         EditorGUILayout.BeginVertical("Box");
-        _noise.eType = (eNoiseType)EditorGUILayout.EnumPopup("Noise Type:", _noise.eType);
         _noise.iPeriod = EditorGUILayout.IntSlider("Noise Period", _noise.iPeriod, 2, 20);
         _noise.bFBM = EditorGUILayout.Toggle("Use fBm", _noise.bFBM);
         if (_noise.bFBM == true)
@@ -137,59 +120,28 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         Texture2D tex2D = new Texture2D(mTexSize, mTexSize, TextureFormat.RGBA32, false, true);
         Color[] cols = tex2D.GetPixels();
 
-        var buffer = new ComputeBuffer(mTexSize * mTexSize, sizeof(float));
-        float[] datas = new float[mTexSize * mTexSize];
+        var buffer = new ComputeBuffer(mTexSize * mTexSize, sizeof(float) * 3);
+        Vector3[] datas = new Vector3[mTexSize * mTexSize];
 
-        if (SetNoiseCS_2D(noises[0], buffer) == true)
+        if (SetNoiseCS_2D(noises, buffer) == true)
         {            
             buffer.GetData(datas);
 
             for (int i = 0; i < datas.Length; ++i)
-                cols[i].r = datas[i];
+            {
+                cols[i].r = datas[i].x;
+                cols[i].g = datas[i].y;
+                cols[i].b = datas[i].z;
+            }
         }
         else
         {
             for (int i = 0; i < datas.Length; ++i)
+            {
                 cols[i].r = 0.0f;
-        }
-
-        if (SetNoiseCS_2D(noises[1], buffer) == true)
-        {
-            buffer.GetData(datas);
-
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].g = datas[i];
-        }
-        else
-        {
-            for (int i = 0; i < datas.Length; ++i)
                 cols[i].g = 0.0f;
-        }
-
-        if (SetNoiseCS_2D(noises[2], buffer) == true)
-        {
-            buffer.GetData(datas);
-
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].b = datas[i];
-        }
-        else
-        {
-            for (int i = 0; i < datas.Length; ++i)
                 cols[i].b = 0.0f;
-        }
-
-        if (SetNoiseCS_2D(noises[3], buffer) == true)
-        {
-            buffer.GetData(datas);
-
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].a = datas[i];
-        }
-        else
-        {
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].a = 0.0f;
+            }
         }
 
         buffer.Release();
@@ -205,60 +157,29 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         Texture3D tex3D = new Texture3D(mTexSize, mTexSize, mTexSize, TextureFormat.RGBA32, false);
         Color[] cols = tex3D.GetPixels();
 
-        var buffer = new ComputeBuffer(mTexSize * mTexSize * mTexSize, sizeof(float));
-        float[] datas = new float[mTexSize * mTexSize * mTexSize];
+        var buffer = new ComputeBuffer(mTexSize * mTexSize * mTexSize, sizeof(float) * 3);
+        Vector3[] datas = new Vector3[mTexSize * mTexSize * mTexSize];
 
 
-        if (SetNoiseCS_3D(noises[0], buffer) == true)
+        if (SetNoiseCS_3D(noises, buffer) == true)
         {
             buffer.GetData(datas);
 
             for (int i = 0; i < datas.Length; ++i)
-                cols[i].r = datas[i];
+            {
+                cols[i].r = datas[i].x;
+                cols[i].g = datas[i].y;
+                cols[i].b = datas[i].z;
+            }
         }
         else
         {
             for (int i = 0; i < datas.Length; ++i)
-                cols[i].r = 0f;
-        }
-
-        if (SetNoiseCS_3D(noises[1], buffer) == true)
-        {
-            buffer.GetData(datas);
-
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].g = datas[i];
-        }
-        else
-        {
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].g = 0f;
-        }
-
-        if (SetNoiseCS_3D(noises[2], buffer) == true)
-        {
-            buffer.GetData(datas);
-
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].b = datas[i];
-        }
-        else
-        {
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].b = 0f;
-        }
-
-        if (SetNoiseCS_3D(noises[3], buffer) == true)
-        {
-            buffer.GetData(datas);
-
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].a = datas[i];
-        }
-        else
-        {
-            for (int i = 0; i < datas.Length; ++i)
-                cols[i].a = 0f;
+            {
+                cols[i].r = 0.0f;
+                cols[i].g = 0.0f;
+                cols[i].b = 0.0f;
+            }
         }
 
         buffer.Release();
@@ -336,12 +257,9 @@ public class SeamlessNoiseMakerGPU : EditorWindow
     {
         if (_noise == null || _res == null) return false;
 
-        string path = string.Empty;
-        string kanel = string.Empty;
-        RandomTable randFunc = null;
-
-        if (GetComputerShader_2D(_noise.eType, out path, out kanel, out randFunc) == false)
-            return false;
+        string path = "TiliedCurlNoise2D";
+        string kanel = "CS_CurlNoise2D";
+        RandomTable randFunc = SetPerlinRandomTable;
 
         ComputeShader cs = Resources.Load<ComputeShader>(path);
         if (cs == null) return false;
@@ -387,12 +305,9 @@ public class SeamlessNoiseMakerGPU : EditorWindow
     {
         if (_noise == null || _res == null) return false;
 
-        string path = string.Empty;
-        string kanel = string.Empty;
-        RandomTable randFunc = null;
-
-        if (GetComputerShader_3D(_noise.eType, out path, out kanel, out randFunc) == false)
-            return false;
+        string path = "TiliedCurlNoise3D";
+        string kanel = "CS_CurlNoise3D";
+        RandomTable randFunc = SetCommonRandomTable;
 
         ComputeShader cs = Resources.Load<ComputeShader>(path);
         if (cs == null) return false;
@@ -433,91 +348,6 @@ public class SeamlessNoiseMakerGPU : EditorWindow
 
         return true;
     }
-
-    bool GetComputerShader_2D(eNoiseType _type, out string _path, out string _kanel, out RandomTable _randFunc)
-    {
-        bool res = false;
-
-        _path = string.Empty;
-        _kanel = string.Empty;
-        _randFunc = null;
-
-        switch (_type)
-        {
-            case eNoiseType.Perlin:
-                _path = "TiliedPerlinNoise2D";
-                _kanel = "CS_PerlinNoise2D";
-                _randFunc = SetPerlinRandomTable;
-                res = true;
-                break;
-
-            case eNoiseType.Voronoi:
-                _path = "TiliedVoronoi2D";
-                _kanel = "CS_Voronoi2D";
-                _randFunc = SetCommonRandomTable;
-                res = true;
-                break;
-
-            case eNoiseType.Cellular:
-                _path = "TiliedCellularNoise2D";
-                _kanel = "CS_CellularNoise2D";
-                _randFunc = SetCommonRandomTable;
-                res = true;
-                break;
-
-            case eNoiseType.PerlinWorley:
-                _path = "TiliedPerlinWorley2D";
-                _kanel = "CS_PerlinWorley2D";
-                _randFunc = SetPerlinWorleyRandomTable;
-                res = true;
-                break;
-        }
-
-        return res;
-    }
-
-    bool GetComputerShader_3D(eNoiseType _type, out string _path, out string _kanel, out RandomTable _randFunc)
-    {
-        bool res = false;
-
-        _path = string.Empty;
-        _kanel = string.Empty;
-        _randFunc = null;
-
-        switch (_type)
-        {
-            case eNoiseType.Perlin:
-                _path = "TiliedPerlinNoise3D";
-                _kanel = "CS_PerlinNoise3D";
-                _randFunc = SetPerlinRandomTable;
-                res = true;
-                break;
-
-            case eNoiseType.Voronoi:
-                _path = "TiliedVoronoi3D";
-                _kanel = "CS_Voronoi3D";
-                _randFunc = SetCommonRandomTable;
-                res = true;
-                break;
-
-            case eNoiseType.Cellular:
-                _path = "TiliedCellularNoise3D";
-                _kanel = "CS_CellularNoise3D";
-                _randFunc = SetCommonRandomTable;
-                res = true;
-                break;
-
-            case eNoiseType.PerlinWorley:
-                _path = "TiliedPerlinWorley3D";
-                _kanel = "CS_PerlinWorley3D";
-                _randFunc = SetPerlinWorleyRandomTable;
-                res = true;
-                break;
-        }
-
-        return res;
-    }
-
     
     bool IntPow2Field(string _label, ref int data, params GUILayoutOption[] par)
     {
@@ -543,11 +373,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
             System.IO.Directory.CreateDirectory(path);
         }
 
-        string output = string.Format("{0}R({1})_G({2})_B({3})_A({4}))_{5}_{6}.asset", path,
-            noises[0].eType,
-            noises[1].eType,
-            noises[2].eType,
-            noises[3].eType,
+        string output = string.Format("{0}Curl_{1}_{2}.asset", path,
             mTexSize, mDim);
 
         if (System.IO.File.Exists(output) == true)

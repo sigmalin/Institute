@@ -64,7 +64,8 @@ float TiliedPerlinNoise2D(float2 st, float period)
 			);
 
 	y1 = lerp(x1, x2, v);
-	return (y1 + 1) * 0.5f;
+	//return (y1 + 1) * 0.5f;
+	return y1;
 }
 
 float TiliedPerlinNoise3D(float3 st, float period)
@@ -121,9 +122,9 @@ float TiliedPerlinNoise3D(float3 st, float period)
 			u
 			);
 	y2 = lerp(x1, x2, v);
-
-
-	return (lerp(y1, y2, w) + 1) * 0.5f;
+	
+	//return (lerp(y1, y2, w) + 1) * 0.5f;
+	return lerp(y1, y2, w);
 }
 
 #endif // __TilingPerlinNoise_

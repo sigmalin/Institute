@@ -2,7 +2,9 @@
 {
     Properties
     {
-        
+        _Bias ("Bias", Range(-0.1, 0)) = -0.001
+		_Near ("Near Plane", FLOAT) = 0.2
+		_Far  ("Far Plane", FLOAT) = 10
     }
     SubShader
     {
@@ -25,8 +27,7 @@
             struct v2f
             {
                 float4 vertex : SV_POSITION;
-				float ClipDepth : TEXCOORD1;
-				float Depth : TEXCOORD2;
+				float Depth : TEXCOORD1;
             };
 
 			float4 mapDepthToARGB32(float value)
@@ -38,34 +39,42 @@
 				return res;
 			}
 
+			float _Bias;
+			float _Near;
+			float _Far;
+
 
             v2f vert (appdata v)
             {
                 v2f o;
 
                 o.vertex.xyz = UnityObjectToViewPos(v.vertex.xyz);
+				#if defined(UNITY_REVERSED_Z)
 				o.vertex.z = -o.vertex.z; 
+				#endif
 				
 				float L = length(o.vertex.xyz);
 
 				o.vertex.xyz /= L;
-				o.ClipDepth = o.vertex.z;
 
 				o.vertex.xy /= 1 + o.vertex.z;
-				o.vertex.y = -o.vertex.y; // for DX render texture
-
-				o.vertex.z = (L - 0.1) / (100-0.1);
+				
+				//https://docs.unity3d.com/2020.2/Documentation/Manual/SL-PlatformDifferences.html
+				o.vertex.y = lerp(o.vertex.y, -o.vertex.y, _ProjectionParams.x < 0);
 				o.vertex.w = 1;
-								
-				o.vertex.xy *= 1.01;
+
+				o.vertex.z = lerp(((L - _Near) / (_Far-_Near)), -1, o.vertex.z < _Bias);
 				o.Depth = o.vertex.z;
+								
+				#if defined(UNITY_REVERSED_Z)
+				o.vertex.z = 1 - o.vertex.z;
+				#endif
+
                 return o;
             }
 
             float4 frag (v2f i) : SV_Target
             {
-                clip(i.ClipDepth);
-
                 //return mapDepthToARGB32(i.Depth);
 				return i.Depth;
             }

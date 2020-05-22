@@ -7,7 +7,9 @@ Shader "DualParaboloid/DrawDualParaboloidObj"
     Properties
     {
         _Color  ("Color ", Color) = (0,0,0,0)
-		_Bias ("Bias", Range(1, 1.1)) = 1.01
+		_Bias ("Bias", Range(-0.1, 0)) = -0.001
+		_Near ("Near Plane", FLOAT) = 0.2
+		_Far  ("Far Plane", FLOAT) = 10
     }
     SubShader
     {
@@ -38,24 +40,33 @@ Shader "DualParaboloid/DrawDualParaboloidObj"
 
             fixed4 _Color;
 			float _Bias;
+			float _Near;
+			float _Far;
 
             v2f vert (appdata v)
             {
                 v2f o;
                 
 				o.vertex.xyz = UnityObjectToViewPos(v.vertex.xyz);
+				#if defined(UNITY_REVERSED_Z)
 				o.vertex.z = -o.vertex.z; 
+				#endif
 				
 				float L = length(o.vertex.xyz);
 
 				o.vertex.xyz /= L;
 				
 				o.vertex.xy /= 1 + o.vertex.z;
-				o.vertex.y = -o.vertex.y; // for DX render texture
+				
+				//https://docs.unity3d.com/2020.2/Documentation/Manual/SL-PlatformDifferences.html
+				o.vertex.y = lerp(o.vertex.y, -o.vertex.y, _ProjectionParams.x < 0);
 				o.vertex.w = 1;
 
-				o.vertex.xy *= _Bias;
-				o.vertex.z = lerp((L - 0.5) / (10-0.5), o.vertex.z, o.vertex.z < 0);
+				o.vertex.z = lerp(((L - _Near) / (_Far-_Near)), -1, o.vertex.z < _Bias);
+				
+				#if defined(UNITY_REVERSED_Z)
+				o.vertex.z = 1 - o.vertex.z;
+				#endif	
 
                 return o;
             }

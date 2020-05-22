@@ -3,8 +3,10 @@
     Properties
     {
         _Color  ("Color ", Color) = (0,0,0,0)
-		//_Front ("_Front", 2D) = "white" {}
-		//_Rear ("_Rear", 2D) = "white" {}
+		_Front ("_Front", 2D) = "white" {}
+		_Rear ("_Rear", 2D) = "white" {}
+		_Near ("Near Plane", FLOAT) = 0.2
+		_Far  ("Far Plane", FLOAT) = 10
     }
     SubShader
     {
@@ -35,8 +37,8 @@
 			fixed4 _Color;
 			sampler2D _Front;
             sampler2D _Rear;
-
-			float4x4 _DualParaboloid;
+			float _Near;
+			float _Far;
 
 			float getDepthFromARGB32(float4 value)
 			{
@@ -61,7 +63,9 @@
 				float3 vPos = mul(_DualParaboloid, i.posWorld);
 				float L = length(vPos);
 
+				#if defined(UNITY_REVERSED_Z)
 				vPos.z *= -1;
+				#endif				
 
 				vPos /= L;
 
@@ -74,7 +78,7 @@
 
 				//float fDepth = getDepthFromARGB32(lerp(tex2D(_Front, uvF), tex2D(_Rear, uvR), vPos.z < 0));
 				float fDepth = lerp(tex2D(_Front, uvF), tex2D(_Rear, uvR), vPos.z < 0);
-				float fDistance = (L - 0.1) / (100-0.1);
+				float fDistance = (L - _Near) / (_Far-_Near);
 				
 				float3 col = _Color.rgb * (dot(normalDirection, lightDirection) + 1) * 0.5;
 

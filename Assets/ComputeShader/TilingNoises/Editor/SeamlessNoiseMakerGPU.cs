@@ -9,7 +9,6 @@ public class SeamlessNoiseMakerGPU : EditorWindow
 {
     static SeamlessNoiseMakerGPU window;
 
-    float mRandomSeed = 114514.1515f;
     int mTexSize = 64;
 
     enum eNoiseType
@@ -19,6 +18,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         Voronoi,
         Cellular,
         PerlinWorley,
+        WhiteNoise,
     };
 
     enum eNoiseDim
@@ -37,6 +37,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         public int iOctaves;
         public float fPersistence;
         public float fScale;
+        public float fRandomSeed;
 
         public NoiseModule()
         {
@@ -46,6 +47,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
             iOctaves = 4;
             fPersistence = 0.5f;
             fScale = 2f;
+            fRandomSeed = 114514.1515f;
         }
     }
 
@@ -80,15 +82,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         EditorGUILayout.BeginVertical("Box");
         IntPow2Field("Noise Texture Size", ref mTexSize);
         EditorGUILayout.EndVertical();
-
-        EditorGUILayout.BeginHorizontal("Box");
-        EditorGUILayout.LabelField("Random Seed:", mRandomSeed.ToString());
-        if (GUILayout.Button("Random"))
-        {
-            mRandomSeed = UnityEngine.Random.Range(0.001f, 200000f);
-        }
-        EditorGUILayout.EndHorizontal();
-
+        
         mDim = (eNoiseDim)EditorGUILayout.EnumPopup("Texture Dimension:", mDim);
 
         SettingNoise("Channel (R)", noises[0]);
@@ -121,15 +115,46 @@ public class SeamlessNoiseMakerGPU : EditorWindow
 
         EditorGUILayout.BeginVertical("Box");
         _noise.eType = (eNoiseType)EditorGUILayout.EnumPopup("Noise Type:", _noise.eType);
-        _noise.iPeriod = EditorGUILayout.IntSlider("Noise Period", _noise.iPeriod, 2, 20);
-        _noise.bFBM = EditorGUILayout.Toggle("Use fBm", _noise.bFBM);
-        if (_noise.bFBM == true)
+        _noise.iPeriod = EditorGUILayout.IntSlider("Noise Period", _noise.iPeriod, 2, 40);
+        
+        EditorGUILayout.BeginHorizontal();
+        _noise.fRandomSeed = EditorGUILayout.FloatField("Random Seed:", _noise.fRandomSeed);
+        if (GUILayout.Button("Random"))
         {
-            _noise.iOctaves = EditorGUILayout.IntSlider("fBm Octaves", _noise.iOctaves, 2, 10);
-            _noise.fPersistence = EditorGUILayout.Slider("fBm Persistence", _noise.fPersistence, 0f, 1f);
-            _noise.fScale = EditorGUILayout.Slider("fBm Scale", _noise.fScale, 1f, 10f);
+            _noise.fRandomSeed = UnityEngine.Random.Range(0.001f, 200000f);
         }
+        EditorGUILayout.EndHorizontal();
+
+        if(EnableFBM(_noise.eType) == true)
+        {
+            _noise.bFBM = EditorGUILayout.Toggle("Use fBm", _noise.bFBM);
+            if (_noise.bFBM == true)
+            {
+                _noise.iOctaves = EditorGUILayout.IntSlider("fBm Octaves", _noise.iOctaves, 2, 20);
+                _noise.fPersistence = EditorGUILayout.Slider("fBm Persistence", _noise.fPersistence, 0f, 1f);
+                _noise.fScale = EditorGUILayout.Slider("fBm Scale", _noise.fScale, 1f, 10f);
+            }
+        }
+        else
+        {
+            _noise.bFBM = false;
+        }        
         EditorGUILayout.EndVertical();
+    }
+
+    bool EnableFBM(eNoiseType _type)
+    {
+        bool enabledFBM = true;
+
+        switch(_type)
+        {
+            case eNoiseType.None:
+            case eNoiseType.WhiteNoise:
+                enabledFBM = false;
+                break;
+        }
+
+        return enabledFBM;
     }
 
     void GenerateNoise_2D()
@@ -270,9 +295,9 @@ public class SeamlessNoiseMakerGPU : EditorWindow
     }
 
     #region Random Table
-    delegate ComputeBuffer RandomTable(ComputeShader _cs, int _kanel);
+    delegate ComputeBuffer RandomTable(ComputeShader _cs, int _kanel, float _seed);
 
-    ComputeBuffer SetPerlinRandomTable(ComputeShader _cs, int _kanel)
+    ComputeBuffer SetPerlinRandomTable(ComputeShader _cs, int _kanel, float _seed)
     {
         int[] perm = {
             151,160,137,91,90,15,
@@ -290,7 +315,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
             138,236,205,93,222,114,67,29,24,72,243,141,128,195,78,66,215,61,156,180
         };
 
-        UnityEngine.Random.InitState(Mathf.FloorToInt(mRandomSeed));
+        UnityEngine.Random.InitState(Mathf.FloorToInt(_seed));
 
         int[] shuffle = new int[256];
         for (int i = 0; i < 256; ++i)
@@ -319,15 +344,15 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         return buffer;
     }
 
-    ComputeBuffer SetPerlinWorleyRandomTable(ComputeShader _cs, int _kanel)
+    ComputeBuffer SetPerlinWorleyRandomTable(ComputeShader _cs, int _kanel, float _seed)
     {
-        SetCommonRandomTable(_cs, _kanel);
-        return SetPerlinRandomTable(_cs, _kanel);
+        SetCommonRandomTable(_cs, _kanel, _seed);
+        return SetPerlinRandomTable(_cs, _kanel, _seed);
     }
 
-    ComputeBuffer SetCommonRandomTable(ComputeShader _cs, int _kanel)
+    ComputeBuffer SetCommonRandomTable(ComputeShader _cs, int _kanel, float _seed)
     {
-        _cs.SetFloat("RandomSeed", mRandomSeed);
+        _cs.SetFloat("RandomSeed", _seed);
         return null;
     }
     #endregion
@@ -351,7 +376,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         ComputeBuffer rtBuffer = null;
         if (randFunc != null)
         {
-            rtBuffer = randFunc.Invoke(cs, kID);
+            rtBuffer = randFunc.Invoke(cs, kID, _noise.fRandomSeed);
         }
 
         cs.SetInt("Octaves", _noise.bFBM ? _noise.iOctaves : 1);
@@ -402,7 +427,7 @@ public class SeamlessNoiseMakerGPU : EditorWindow
         ComputeBuffer rtBuffer = null;
         if (randFunc != null)
         {
-            rtBuffer = randFunc.Invoke(cs, kID);
+            rtBuffer = randFunc.Invoke(cs, kID, _noise.fRandomSeed);
         }
 
         cs.SetInt("Octaves", _noise.bFBM ? _noise.iOctaves : 1);
@@ -471,6 +496,13 @@ public class SeamlessNoiseMakerGPU : EditorWindow
                 _randFunc = SetPerlinWorleyRandomTable;
                 res = true;
                 break;
+
+            case eNoiseType.WhiteNoise:
+                _path = "WhiteNoise2D";
+                _kanel = "CS_WhiteNoise2D";
+                _randFunc = SetCommonRandomTable;
+                res = true;
+                break;
         }
 
         return res;
@@ -511,6 +543,13 @@ public class SeamlessNoiseMakerGPU : EditorWindow
                 _path = "TiliedPerlinWorley3D";
                 _kanel = "CS_PerlinWorley3D";
                 _randFunc = SetPerlinWorleyRandomTable;
+                res = true;
+                break;
+
+            case eNoiseType.WhiteNoise:
+                _path = "WhiteNoise3D";
+                _kanel = "CS_WhiteNoise3D";
+                _randFunc = SetCommonRandomTable;
                 res = true;
                 break;
         }

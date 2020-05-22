@@ -1,0 +1,17 @@
+﻿// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CS_WhiteNoise2D
+
+#include "..\Shaders\TilingNoiseCommon.cginc"
+
+RWStructuredBuffer<float> Result;
+
+
+[numthreads(8,8,8)]
+void CS_WhiteNoise2D (uint3 id : SV_DispatchThreadID)
+{
+    // TODO: insert actual code here!
+	int indx = id.y * TexWidth + id.x;
+	float2 st = float2(id.x / ((float)TexWidth-1.0), id.y / ((float)TexHeight-1.0));
+	
+    Result[indx] = frac(sin(dot(st ,float2(12.9898,78.233))) * RandomSeed);
+}

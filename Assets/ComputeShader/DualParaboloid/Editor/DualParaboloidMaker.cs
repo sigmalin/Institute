@@ -13,7 +13,13 @@ public class DualParaboloidMaker : IBLMaker
 
     int mTexSize = 512;
 
+    bool mApplyMipmap = false;
+
     bool mUseComputerShader;
+
+    bool mApplyReinhard;
+
+    bool mdLDREncode;
 
     [MenuItem("sigmalin/Institute/DualParaboloid/DualParaboloidMaker")]
     static void OpenDualParaboloidMaker()
@@ -33,8 +39,15 @@ public class DualParaboloidMaker : IBLMaker
         if (cubeEnvironment == null) return;
 
         IntPow2Field("Cube Size", ref mTexSize);
-
+        
         mUseComputerShader = GUILayout.Toggle(mUseComputerShader, "Use ComputerShader");
+
+        if(mUseComputerShader == true)
+        {
+            mApplyMipmap = GUILayout.Toggle(mApplyMipmap, "Apply Mipmap");
+            mApplyReinhard = GUILayout.Toggle(mApplyReinhard, "Apply Reinhard");
+            mdLDREncode = GUILayout.Toggle(mdLDREncode, "Cubemap is dLDR Encode?");
+        }
 
         if (GUILayout.Button("Generate"))
         {
@@ -52,32 +65,49 @@ public class DualParaboloidMaker : IBLMaker
 
         int kanel = cs.FindKernel("CS_Cube2DualParaboloid");
 
-        var buffer = new ComputeBuffer(mTexSize * mTexSize * 2, sizeof(float) * 4);
+        int mipmapCount = mApplyMipmap ? cubeEnvironment.mipmapCount : 1;
 
-        cs.SetTexture(kanel, "cubemap", cubeEnvironment);
-        cs.SetBuffer(kanel, "Result", buffer);
+        Texture2D clone = new Texture2D(mTexSize * 2, mTexSize, TextureFormat.RGBA32, mipmapCount, true);
 
-        cs.SetInt("texSize", mTexSize);
+        for(int i = 0; i < mipmapCount; ++i)
+        {
+            Color[] cols;
+            ComputeDualParaboloid(cs, kanel, i, out cols);
+            clone.SetPixels(cols, i);
+        }
+        clone.Apply();
+        
+        SaveTexture<Texture2D>(clone, GetPath("Combine"));
+    }
+
+    void ComputeDualParaboloid(ComputeShader _cs, int _kanel, int _mipmapLevel, out Color[] _cols)
+    {
+        int texSize = mTexSize >> _mipmapLevel;        
+        
+        var buffer = new ComputeBuffer(texSize * texSize * 2, sizeof(float) * 4);
+
+        _cs.SetTexture(_kanel, "cubemap", cubeEnvironment);
+        _cs.SetBuffer(_kanel, "Result", buffer);
+
+        _cs.SetInt("mipmapLevel", _mipmapLevel);
+        _cs.SetInt("texSize", texSize);
+        _cs.SetBool("applyReinhard", mApplyReinhard);
+        _cs.SetBool("dLDREncode", mdLDREncode);
 
         uint sizeX, sizeY, sizeZ;
-        cs.GetKernelThreadGroupSizes(
-            kanel,
+        _cs.GetKernelThreadGroupSizes(
+            _kanel,
             out sizeX,
             out sizeY,
             out sizeZ
         );
 
-        cs.Dispatch(kanel, (mTexSize * 2) / (int)sizeX, mTexSize / (int)sizeY, 1);
+        _cs.Dispatch(_kanel, (texSize * 2) / (int)sizeX, texSize / (int)sizeY, 1);
 
-        Color[] cols = new Color[mTexSize * mTexSize * 2];
-        buffer.GetData(cols);
+        _cols = new Color[texSize * texSize * 2];
+
+        buffer.GetData(_cols);
         buffer.Release();
-
-        Texture2D clone = new Texture2D(mTexSize * 2, mTexSize, TextureFormat.RGBA32, false, true);
-        clone.SetPixels(cols);
-        clone.Apply();
-
-        SaveTexture<Texture2D>(clone, GetPath("Combine"));
     }
 
     void RenderDualParaboloid()

@@ -39,6 +39,7 @@
             sampler2D _Rear;
 			float _Near;
 			float _Far;
+			float4x4 _DualParaboloid;
 
 			float getDepthFromARGB32(float4 value)
 			{

@@ -4,7 +4,15 @@
 float4 filtering_cube_map(TextureCube<float4> cubemap, SamplerState state, float3 n) 
 {
     n.yz = -n.yz;
-    return cubemap.SampleLevel(state,n,0);
+
+	float4 col = cubemap.SampleLevel(state,n,0);
+
+	#ifdef UNITY_COLORSPACE_GAMMA
+	col.rgb *= 2;
+	#else
+	col.rgb *= 4.59482;
+	#endif
+    return col;
 }
 
 float3 calc_normal(int face, float2 uv) {

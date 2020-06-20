@@ -58,15 +58,19 @@ Shader "DualParaboloid/DrawDualParaboloidCube"
 				o.vertex.xy /= 1 + o.vertex.z;
 				
 				//handle upside-down, https://docs.unity3d.com/2020.2/Documentation/Manual/SL-PlatformDifferences.html
-				o.vertex.y = lerp(o.vertex.y, -o.vertex.y, _ProjectionParams.x < 0);
+				if(_ProjectionParams.x < 0)
+					o.vertex.y = -o.vertex.y;
 				o.vertex.w = 1;
 
 				o.vertex.z = lerp(((L - _Near) / (_Far-_Near)), -1, o.vertex.z < _Bias);
 
 				o.texcoord = v.vertex.xyz;
 
-				// Convert to Right-handed coordinate system, remap (near(0),far(1)) to (near(1),far(0))
-				o.vertex.z = 1 - o.vertex.z;
+				// Convert to Clip Space
+				if(UNITY_NEAR_CLIP_VALUE  == 1) // for DirectX (near(1),far(0))
+					o.vertex.z = 1 - o.vertex.z;
+				else							// for OpenGL (near(-1),far(1))
+					o.vertex.z = o.vertex.z - 1;
 				
                 return o;
             }

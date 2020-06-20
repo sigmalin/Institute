@@ -11,6 +11,14 @@ public class IntegrateBRDFMaker : IBLMaker
 
     int mTexSize = 1024;
 
+    public enum TexFormat
+    {
+        RGB24 = 0,
+        R16G16 = 1,
+    }
+
+    TexFormat mFmt;
+
     [MenuItem("sigmalin/Institute/IBL/IntegrateBRDFMaker")]
     static void OpenIntegrateBRDFMaker()
     {
@@ -26,6 +34,8 @@ public class IntegrateBRDFMaker : IBLMaker
         }
         
         IntPow2Field("IntegrateBRDF Texture Size", ref mTexSize);
+
+        mFmt = (TexFormat)EditorGUILayout.EnumPopup("Texture Format", mFmt);
 
         if (GUILayout.Button("Generate"))
         {
@@ -59,7 +69,20 @@ public class IntegrateBRDFMaker : IBLMaker
         buffer.GetData(cols);
         buffer.Release();
 
-        Texture2D clone = new Texture2D(mTexSize, mTexSize, TextureFormat.RGBA32, false, true);
+        TextureFormat texFmt = TextureFormat.RGBA32;
+
+        switch (mFmt)
+        {
+            case TexFormat.R16G16:
+                texFmt = TextureFormat.RGHalf;
+                break;
+
+            case TexFormat.RGB24:
+                texFmt = TextureFormat.RGB24;
+                break;
+        }
+
+        Texture2D clone = new Texture2D(mTexSize, mTexSize, texFmt, false, true);
         clone.SetPixels(cols);
         clone.Apply();
 
@@ -75,7 +98,7 @@ public class IntegrateBRDFMaker : IBLMaker
             System.IO.Directory.CreateDirectory(path);
         }
 
-        string output = string.Format("{0}IntegrateBRDF_{1}.asset", path, mTexSize);
+        string output = string.Format("{0}IntegrateBRDF_{1}_{2}.asset", path, mFmt, mTexSize);
 
         if (System.IO.File.Exists(output) == true)
         {

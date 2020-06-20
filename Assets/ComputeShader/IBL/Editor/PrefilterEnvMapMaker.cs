@@ -58,7 +58,7 @@ public class PrefilterEnvMapMaker : IBLMaker
             CubemapFace.NegativeZ,
         };
 
-        Cubemap clone = new Cubemap(mCubeSize, TextureFormat.RGBA32, true);
+        Cubemap clone = new Cubemap(mCubeSize, TextureFormat.RGBA32, MIN_MAP_LEVEL);
 
         for (int i = 0; i < faces.Length; ++i)
         {

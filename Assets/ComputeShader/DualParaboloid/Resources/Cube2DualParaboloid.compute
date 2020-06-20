@@ -1,5 +1,6 @@
 ﻿// Each #kernel tells which function to compile; you can have many kernels
 #pragma kernel CS_Cube2DualParaboloid
+#include "..\..\IBL\Shaders\ReinhardToneMapping.cginc"
 
 RWStructuredBuffer<float4> Result;
 
@@ -7,6 +8,9 @@ TextureCube<float4> cubemap;
 SamplerState _LinearClamp;
 
 int texSize;
+int mipmapLevel;
+bool applyReinhard;
+bool dLDREncode;
 
 [numthreads(8,8,1)]
 void CS_Cube2DualParaboloid (uint3 id : SV_DispatchThreadID)
@@ -14,22 +18,33 @@ void CS_Cube2DualParaboloid (uint3 id : SV_DispatchThreadID)
     // TODO: insert actual code here!
 	int indx = id.y * texSize * 2 + id.x;
 
-	float s = float(id.x+0.5) / (texSize);
+	float s = (float(id.x)+0.5) / (texSize);
 	float z = lerp(-1, 1, s < 1);
 
 	s = (1 - z*(1 - s)) * 2 - 1;
 
-	float t = float(id.y+0.5) / (texSize) * 2 - 1;	
+	float t = (float(id.y)+0.5) / (texSize) * 2 - 1;	
 
 	float l = s * s + t * t;
 
 	float4 col = 0;
 	
-	if(l <= 1 + (4.0/texSize))
+	//if(l <= 1 + (4.0/texSize))
 	{
 		float3 R = float3(s, t, (0.5-0.5*l)*z);
 		R = normalize(R);
-		col = cubemap.SampleLevel(_LinearClamp,R,0);
+		col = cubemap.SampleLevel(_LinearClamp,R,mipmapLevel);
+		
+		if(dLDREncode)
+		{
+			#ifdef UNITY_COLORSPACE_GAMMA
+			col.rgb *= 2;
+			#else
+			col.rgb *= 4.59482;
+			#endif
+		}
+
+		if(applyReinhard) col.rgb = Reinhard_tone_mapping(col.rgb);
 	}
 
     Result[indx] = col;

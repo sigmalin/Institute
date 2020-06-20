@@ -32,6 +32,8 @@ public class DiffuseIrradianceMaker : IBLMaker
 
         IntPow2Field("Cube Size", ref mCubeSize);
 
+        HDRDecoderField();
+
         if (GUILayout.Button("Generate"))
         {
             ComputeIrradianceDiffuse();
@@ -79,6 +81,9 @@ public class DiffuseIrradianceMaker : IBLMaker
         _cs.SetBuffer(_kanel, "Result", buffer);
         _cs.SetInt("face", _face);
         _cs.SetInt("cubeSize", mCubeSize);
+
+        SetHDRDecode(_cs);
+        SetColorSpace(_cs);
 
         uint sizeX, sizeY, sizeZ;
         _cs.GetKernelThreadGroupSizes(

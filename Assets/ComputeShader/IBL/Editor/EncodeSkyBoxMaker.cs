@@ -83,6 +83,9 @@ public class EncodeSkyBoxMaker : IBLMaker
         _cs.SetInt("face", _face);
         _cs.SetInt("cubeSize", size);
 
+        SetHDRDecode(_cs);
+        SetColorSpace(_cs);
+
         uint sizeX, sizeY, sizeZ;
         _cs.GetKernelThreadGroupSizes(
             _kanel,

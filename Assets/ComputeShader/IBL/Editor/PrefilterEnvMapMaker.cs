@@ -35,6 +35,8 @@ public class PrefilterEnvMapMaker : IBLMaker
         IntPow2Field("Cube Size", ref mCubeSize);
         mCubeSize = Mathf.Max(512, mCubeSize);
 
+        HDRDecoderField();
+
         if (GUILayout.Button("Generate"))
         {
             ComputePrefilterEnvMap();
@@ -88,6 +90,9 @@ public class PrefilterEnvMapMaker : IBLMaker
         _cs.SetInt("face", _face);
         _cs.SetInt("cubeSize", size);
         _cs.SetFloat("roughness", ((float)(_mipmap)) / ((float)(MIN_MAP_LEVEL-1)));
+
+        SetHDRDecode(_cs);
+        SetColorSpace(_cs);
 
         uint sizeX, sizeY, sizeZ;
         _cs.GetKernelThreadGroupSizes(

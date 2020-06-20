@@ -19,7 +19,7 @@ public class DualParaboloidMaker : IBLMaker
 
     bool mApplyReinhard;
 
-    bool mdLDREncode;
+    bool mUnityDecoder;
 
     [MenuItem("sigmalin/Institute/DualParaboloid/DualParaboloidMaker")]
     static void OpenDualParaboloidMaker()
@@ -46,7 +46,11 @@ public class DualParaboloidMaker : IBLMaker
         {
             mApplyMipmap = GUILayout.Toggle(mApplyMipmap, "Apply Mipmap");
             mApplyReinhard = GUILayout.Toggle(mApplyReinhard, "Apply Reinhard");
-            mdLDREncode = GUILayout.Toggle(mdLDREncode, "Cubemap is dLDR Encode?");
+            mUnityDecoder = GUILayout.Toggle(mUnityDecoder, "Apply Unity Decoder");
+            if(mUnityDecoder == true)
+            {
+                HDRDecoderField();
+            }
         }
 
         if (GUILayout.Button("Generate"))
@@ -67,9 +71,10 @@ public class DualParaboloidMaker : IBLMaker
 
         int mipmapCount = mApplyMipmap ? cubeEnvironment.mipmapCount : 1;
 
+        //Texture2D clone = new Texture2D(mTexSize * 2, mTexSize, TextureFormat.RGBA32, mipmapCount, PlayerSettings.colorSpace == ColorSpace.Linear);
         Texture2D clone = new Texture2D(mTexSize * 2, mTexSize, TextureFormat.RGBA32, mipmapCount, true);
 
-        for(int i = 0; i < mipmapCount; ++i)
+        for (int i = 0; i < mipmapCount; ++i)
         {
             Color[] cols;
             ComputeDualParaboloid(cs, kanel, i, out cols);
@@ -92,7 +97,10 @@ public class DualParaboloidMaker : IBLMaker
         _cs.SetInt("mipmapLevel", _mipmapLevel);
         _cs.SetInt("texSize", texSize);
         _cs.SetBool("applyReinhard", mApplyReinhard);
-        _cs.SetBool("dLDREncode", mdLDREncode);
+        _cs.SetBool("applyUnityDecoder", mUnityDecoder);
+
+        SetHDRDecode(_cs);
+        SetColorSpace(_cs);
 
         uint sizeX, sizeY, sizeZ;
         _cs.GetKernelThreadGroupSizes(

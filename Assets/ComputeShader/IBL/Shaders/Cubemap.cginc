@@ -1,17 +1,19 @@
 #ifndef __Cubemap_
 #define __Cubemap_
 
+float4 decodeInstructions;
+float colorSpace;
+
 float4 filtering_cube_map(TextureCube<float4> cubemap, SamplerState state, float3 n) 
 {
     n.yz = -n.yz;
 
 	float4 col = cubemap.SampleLevel(state,n,0);
+	col.rgb = pow(col.rgb, colorSpace);
 
-	#ifdef UNITY_COLORSPACE_GAMMA
-	col.rgb *= 2;
-	#else
-	col.rgb *= 4.59482;
-	#endif
+	float alpha = decodeInstructions.w * (col.a - 1) + 1;
+	col.rgb *= (decodeInstructions.x * pow(abs(alpha), decodeInstructions.y));
+
     return col;
 }
 

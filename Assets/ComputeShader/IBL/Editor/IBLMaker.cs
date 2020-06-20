@@ -7,9 +7,39 @@ using UnityEditor;
 
 public class IBLMaker : EditorWindow
 {
+    protected enum HDRDecoder
+    {
+        dLDR,
+        BC6H_UFloat,
+        Other,
+    }
+
+    protected Vector4 mDecodeInstructions;
+
+    protected HDRDecoder mHDRDecoder;
+
     void OnInspectorUpdate()
     {
         Repaint();
+    }
+
+    protected bool HDRDecoderField()
+    {
+        mHDRDecoder = (HDRDecoder)EditorGUILayout.EnumPopup("HDR Decoder", mHDRDecoder);
+        switch (mHDRDecoder)
+        {
+            case HDRDecoder.dLDR:
+                mDecodeInstructions = new Vector4(2, 1, 0, 0);
+                break;
+            case HDRDecoder.BC6H_UFloat:
+                mDecodeInstructions = new Vector4(1, 1, 0, 0);
+                break;
+            default:
+                mDecodeInstructions = EditorGUILayout.Vector4Field("Decode Instructions", mDecodeInstructions);
+                break;
+        }
+
+        return true;
     }
 
     protected bool IntPow2Field(string _label, ref int data, params GUILayoutOption[] par)
@@ -23,6 +53,16 @@ public class IBLMaker : EditorWindow
             data = Mathf.ClosestPowerOfTwo(data);
 
         return bak != data;
+    }
+
+    protected void SetColorSpace(ComputeShader _cs)
+    {
+        _cs.SetFloat("colorSpace", PlayerSettings.colorSpace == ColorSpace.Linear ? 1f : 2.2f);
+    }
+
+    protected void SetHDRDecode(ComputeShader _cs)
+    {
+        _cs.SetVector("decodeInstructions", mDecodeInstructions);
     }
 
     protected void SaveTexture<T>(T _Tex, string _Path) where T : Texture

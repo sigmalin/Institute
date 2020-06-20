@@ -10,7 +10,9 @@ SamplerState _LinearClamp;
 int texSize;
 int mipmapLevel;
 bool applyReinhard;
-bool dLDREncode;
+bool applyUnityDecoder;
+float4 decodeInstructions;
+float colorSpace;
 
 [numthreads(8,8,1)]
 void CS_Cube2DualParaboloid (uint3 id : SV_DispatchThreadID)
@@ -34,15 +36,13 @@ void CS_Cube2DualParaboloid (uint3 id : SV_DispatchThreadID)
 		float3 R = float3(s, t, (0.5-0.5*l)*z);
 		R = normalize(R);
 		col = cubemap.SampleLevel(_LinearClamp,R,mipmapLevel);
+		col.rgb = pow(col.rgb, colorSpace);
 		
-		if(dLDREncode)
+		if(applyUnityDecoder)
 		{
-			#ifdef UNITY_COLORSPACE_GAMMA
-			col.rgb *= 2;
-			#else
-			col.rgb *= 4.59482;
-			#endif
-		}
+			float alpha = decodeInstructions.w * (col.a - 1) + 1;
+			col.rgb *= (decodeInstructions.x * pow(abs(alpha), decodeInstructions.y));
+		}	
 
 		if(applyReinhard) col.rgb = Reinhard_tone_mapping(col.rgb);
 	}

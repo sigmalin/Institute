@@ -57,6 +57,6 @@ void CS_PrefilterEnvMap (uint3 id : SV_DispatchThreadID)
 	float3 normal = calc_normal(face, uv);
 
 	float3 prefilterEnv = Reinhard_tone_mapping(PrefilterEnvMap(normal));
-
+	
     Result[indx] = float4(prefilterEnv, 1.0);
 }

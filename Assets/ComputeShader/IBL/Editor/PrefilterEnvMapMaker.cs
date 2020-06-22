@@ -35,6 +35,8 @@ public class PrefilterEnvMapMaker : IBLMaker
         IntPow2Field("Cube Size", ref mCubeSize);
         mCubeSize = Mathf.Max(512, mCubeSize);
 
+        TextureReadableField();
+
         HDRDecoderField();
 
         if (GUILayout.Button("Generate"))
@@ -72,7 +74,7 @@ public class PrefilterEnvMapMaker : IBLMaker
             }
         }
 
-        clone.Apply();
+        clone.Apply(false, !mOutputTextureReadable);
         SaveTexture<Cubemap>(clone, GetPath());
     }
 

@@ -411,14 +411,13 @@ public class NoiseUtility
 
         float final = 0.0f;
         float amplitude = 1.0f;
-        float frequency = 1.0f;
         float maxAmplitude = 0.0f;
 
         for (int i = 0; i < Octaves; ++i)
         {
-            final += _func(new Vector2(st.x * frequency, st.y * frequency), period) * amplitude;
+            final += _func(new Vector2(st.x, st.y), period) * amplitude;
             maxAmplitude += amplitude;
-            frequency *= Scale;            
+            period *= Scale;            
             amplitude *= Persistence;
         }
 
@@ -431,14 +430,13 @@ public class NoiseUtility
 
         float final = 0.0f;
         float amplitude = 1.0f;
-        float frequency = 1.0f;
         float maxAmplitude = 0.0f;
 
         for (int i = 0; i < Octaves; ++i)
         {
-            final += _func(new Vector3(st.x * frequency, st.y * frequency, st.z * frequency), period) * amplitude;
+            final += _func(new Vector3(st.x, st.y, st.z), period) * amplitude;
             maxAmplitude += amplitude;
-            frequency *= Scale;
+            period *= Scale;
             amplitude *= Persistence;
         }
 

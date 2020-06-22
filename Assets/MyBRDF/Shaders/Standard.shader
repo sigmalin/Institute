@@ -135,11 +135,11 @@
 
 				col.rgb = ACES_tone_mapping(col.rgb);//Filmic_tone_mapping(col.rgb);
 
+				UNITY_APPLY_FOG(i.fogCoord, col.rgb);
+
 				#ifdef UNITY_COLORSPACE_GAMMA
 				col.rgb = LinearToGammaSpace (col.rgb);
-				#endif
-
-				UNITY_APPLY_FOG(i.fogCoord, final);
+				#endif				
 
                 return col;
             }

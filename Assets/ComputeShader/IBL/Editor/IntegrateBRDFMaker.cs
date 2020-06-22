@@ -35,6 +35,8 @@ public class IntegrateBRDFMaker : IBLMaker
         
         IntPow2Field("IntegrateBRDF Texture Size", ref mTexSize);
 
+        TextureReadableField();
+
         mFmt = (TexFormat)EditorGUILayout.EnumPopup("Texture Format", mFmt);
 
         if (GUILayout.Button("Generate"))
@@ -84,7 +86,7 @@ public class IntegrateBRDFMaker : IBLMaker
 
         Texture2D clone = new Texture2D(mTexSize, mTexSize, texFmt, false, true);
         clone.SetPixels(cols);
-        clone.Apply();
+        clone.Apply(false, !mOutputTextureReadable);
 
         SaveTexture<Texture2D>(clone, GetPath());
     }

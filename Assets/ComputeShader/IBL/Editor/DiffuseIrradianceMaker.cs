@@ -32,6 +32,8 @@ public class DiffuseIrradianceMaker : IBLMaker
 
         IntPow2Field("Cube Size", ref mCubeSize);
 
+        TextureReadableField();
+
         HDRDecoderField();
 
         if (GUILayout.Button("Generate"))
@@ -66,7 +68,7 @@ public class DiffuseIrradianceMaker : IBLMaker
             clone.SetPixels(cols, faces[i]);
         }
 
-        clone.Apply();
+        clone.Apply(false, !mOutputTextureReadable);
         SaveTexture<Cubemap>(clone, GetPath());
     }
 

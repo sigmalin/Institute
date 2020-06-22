@@ -39,7 +39,9 @@ public class DualParaboloidMaker : IBLMaker
         if (cubeEnvironment == null) return;
 
         IntPow2Field("Cube Size", ref mTexSize);
-        
+
+        TextureReadableField();
+
         mUseComputerShader = GUILayout.Toggle(mUseComputerShader, "Use ComputerShader");
 
         if(mUseComputerShader == true)
@@ -80,8 +82,8 @@ public class DualParaboloidMaker : IBLMaker
             ComputeDualParaboloid(cs, kanel, i, out cols);
             clone.SetPixels(cols, i);
         }
-        clone.Apply();
-        
+        clone.Apply(false, !mOutputTextureReadable);
+
         SaveTexture<Texture2D>(clone, GetPath("Combine"));
     }
 

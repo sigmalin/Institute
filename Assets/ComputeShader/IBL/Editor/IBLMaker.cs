@@ -18,9 +18,18 @@ public class IBLMaker : EditorWindow
 
     protected HDRDecoder mHDRDecoder;
 
+    protected bool mOutputTextureReadable;
+
     void OnInspectorUpdate()
     {
         Repaint();
+    }
+
+    protected bool TextureReadableField()
+    {
+        bool original = mOutputTextureReadable;
+        mOutputTextureReadable = GUILayout.Toggle(original, "Texture readable");
+        return mOutputTextureReadable != original;
     }
 
     protected bool HDRDecoderField()
@@ -69,9 +78,7 @@ public class IBLMaker : EditorWindow
     {
         if (_Tex == null) return;
 
-        T clone = GameObject.Instantiate<T>(_Tex);
-
-        UnityEditor.AssetDatabase.CreateAsset(clone, _Path);
+        UnityEditor.AssetDatabase.CreateAsset(_Tex, _Path);
 
         AssetDatabase.SaveAssets();
 
@@ -79,6 +86,16 @@ public class IBLMaker : EditorWindow
 
         AssetDatabase.Refresh();
 
+    }
+
+    protected void SetTextureNonReadable(string _Path)
+    {
+        UnityEditor.TextureImporter importer = UnityEditor.AssetImporter.GetAtPath(_Path) as UnityEditor.TextureImporter;        
+        if (importer.isReadable == true)
+        {
+            importer.isReadable = false;
+            AssetDatabase.ImportAsset(_Path);
+        }
     }
 
     protected bool ObjectField<T>(string name, ref T data, bool allowSceneObjects, params GUILayoutOption[] par) where T : UnityEngine.Object

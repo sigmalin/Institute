@@ -14,7 +14,7 @@ float4 filtering_cube_map(TextureCube<float4> cubemap, SamplerState state, float
 	float alpha = decodeInstructions.w * (col.a - 1) + 1;
 	col.rgb *= (decodeInstructions.x * pow(abs(alpha), decodeInstructions.y));
 
-    return col;
+    return min(col,4);
 }
 
 float3 calc_normal(int face, float2 uv) {

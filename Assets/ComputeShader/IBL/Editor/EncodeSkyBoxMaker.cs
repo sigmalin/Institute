@@ -33,6 +33,10 @@ public class EncodeSkyBoxMaker : IBLMaker
         IntPow2Field("Cube Size", ref mCubeSize);
         mCubeSize = Mathf.Max(512, mCubeSize);
 
+        TextureReadableField();
+
+        HDRDecoderField();
+
         if (GUILayout.Button("Generate"))
         {
             ComputeEncodeSkyBox();
@@ -65,7 +69,7 @@ public class EncodeSkyBoxMaker : IBLMaker
             clone.SetPixels(cols, faces[i]);
         }
 
-        clone.Apply();
+        clone.Apply(false, !mOutputTextureReadable);
         SaveTexture<Cubemap>(clone, GetPath());
     }
 

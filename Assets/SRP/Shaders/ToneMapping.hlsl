@@ -9,9 +9,9 @@ float3 Reinhard_tone_mapping(float3 hdrColor)
 
 float3 Inv_Reinhard_tone_mapping(float3 ldrColor)
 {
-	float3 denominator = 1 - min(0.66,ldrColor);
-	//return ldrColor / (float3(1.0,1.0,1.0) - ldrColor);
-	return ldrColor / denominator;
+	//float3 denominator = 1 - min(0.66,ldrColor);
+	return ldrColor / (float3(1.0,1.0,1.0) - ldrColor);
+	//return ldrColor / denominator;
 }
 
 float3 Filmic_tone_mapping(float3 linearCol)

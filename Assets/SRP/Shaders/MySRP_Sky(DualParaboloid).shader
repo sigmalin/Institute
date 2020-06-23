@@ -51,10 +51,6 @@
             {
 				float4 col = SAMPLE_DUALPARBOLOID_LOD (_Skymap, sampler_Skymap, i.texcoord, 0);								
 				col.rgb = Inv_Reinhard_tone_mapping(col.rgb);
-
-				#if defined(UNITY_COLORSPACE_GAMMA)
-				col.rgb = pow(col.rgb,  0.454545);
-				#endif
 				
 				return col;
             }

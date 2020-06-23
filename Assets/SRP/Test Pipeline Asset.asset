@@ -14,16 +14,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   Setting:
     useSRPBatcher: 1
-    Exposure: 0.5
+    Exposure: 0.52
     shadow:
-      maxDistance: 100
+      maxDistance: 20
       atlasSize: 1024
     Fxaa:
-      fxaaContrastThreshold: 0
-      fxaaRelativeThreshold: 2
+      fxaaContrastThreshold: 1
+      fxaaRelativeThreshold: 3
       SubPixelBlending: 0
     Bloom:
-      intensity: 1
+      intensity: 3.58
       iterations: 4
       threshold: 1
       softThreshold: 0.5

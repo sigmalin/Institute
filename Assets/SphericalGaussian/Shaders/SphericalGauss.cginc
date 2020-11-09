@@ -107,6 +107,20 @@ SG NormalizedSG(in float3 _axis, in float _sharpness)
     SG sg;
     sg.Axis = _axis;
     sg.Sharpness = _sharpness;
+	sg.Amplitude = 1;
+
+    sg.Amplitude = rcp(SGIntegral(sg));
+
+    return sg;
+}
+
+SG ApproximateNormalizedSG(in float3 _axis, in float _sharpness)
+{
+    SG sg;
+    sg.Axis = _axis;
+    sg.Sharpness = _sharpness;
+	sg.Amplitude = 1;
+
     sg.Amplitude = rcp(ApproximateSGIntegral(sg));
 
     return sg;

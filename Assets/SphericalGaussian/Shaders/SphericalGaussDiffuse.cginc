@@ -30,37 +30,37 @@ float3 SGDiffusePunctual(in SG _lightingLobe, in float3 _normal, in float3 _albe
 
 //Stephen Hill's APPROXIMATION Cosine Lobe
 //Assumes lightingLobe is normalized
-float3 SGIrradianceFitted(in SG _lightingLobe, in float3 _normal)
+float ApproximateCosineLobe(in SG _lightingLobe, in float3 _normal)
 {
-    float NdotL = dot(_lightingLobe.Axis, _normal);	
-	float lambda = _lightingLobe.Sharpness;
- 
-    const float c0 = 0.36;
-    const float c1 = 1.0 / (4.0 * c0);
- 
+    const float muDotN = dot(_lightingLobe.Axis, _normal);
+    const float lambda = _lightingLobe.Sharpness;
+
+    const float c0 = 0.36f;
+    const float c1 = 1.0f / (4.0f * c0);
+
     float eml  = exp(-lambda);
     float em2l = eml * eml;
     float rl   = rcp(lambda);
- 
+
     float scale = 1.0f + 2.0f * em2l - rl;
     float bias  = (eml - em2l) * rl - em2l;
- 
+
     float x  = sqrt(1.0f - scale);
-    float x0 = c0 * NdotL;
+    float x0 = c0 * muDotN;
     float x1 = c1 * x;
- 
+
     float n = x0 + x1;
- 
-	float y = (abs(x0) <= x1) ? n * n / x : saturate(NdotL);
+
+    float y = (abs(x0) <= x1) ? n * n / x : saturate(muDotN);
  
     float result = scale * y + bias;
-    return result * ApproximateSGIntegral(_lightingLobe);
+    return result;
 }
 
 float3 SGDiffuseFitted(in SG _lightingLobe, in float3 _normal, in float3 _albedo)
 {
 	float3 brdf = _albedo / PI;
-	return SGIrradianceFitted(_lightingLobe, _normal) * brdf;
+	return ApproximateCosineLobe(_lightingLobe, _normal) * ApproximateSGIntegral(_lightingLobe) * brdf;
 }
 
 #endif // _SPHERICAL_GAUSS_DIFFUSE_H

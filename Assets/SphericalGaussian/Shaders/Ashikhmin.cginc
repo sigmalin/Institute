@@ -68,8 +68,27 @@ float3 AshikhminSpecular(in SG _lightingLobe, in float3 _normal, in float3 _tang
 	float3 h = normalize(warpNDF.BasisZ + _view);
 	float LdotH = max(0.1, dot(warpNDF.BasisZ, h));
 
+	float3 Ds_Integral = EvaluateASG(warpNDF, _lightingLobe.Axis);
+
+	float Ms = AshikhminMterm(_lambda, _mu, LdotH, NdotL, NdotV);
+	float3 Fs = _specular + (1 - _specular) * Schlick(LdotH);
+	
+	return max(Ds_Integral * Fs * Ms * NdotL, 0);
+}
+
+float3 AshikhminSpecularWithIndirect(in SG _lightingLobe, in float3 _normal, in float3 _tangent, in float3 _bitangent, in float3 _view, in float3 _specular, in float _lambda, in float _mu)
+{
+	ASG ndf = AshikhminDterm(_normal, _tangent, _bitangent, _lambda, _mu);
+
+	ASG warpNDF = WarpDistributionASG(ndf, _view);
+
+	float NdotL = saturate(dot(_normal, warpNDF.BasisZ));
+	float NdotV = max(0.1, dot(_normal, _view));
+
+	float3 h = normalize(warpNDF.BasisZ + _view);
+	float LdotH = max(0.1, dot(warpNDF.BasisZ, h));
+
 	float3 Ds_Integral = ConvolveASG_SG(warpNDF, _lightingLobe);
-	//float3 Ds_Integral = EvaluateASG(warpNDF, _lightingLobe.Axis);
 
 	float Ms = AshikhminMterm(_lambda, _mu, LdotH, NdotL, NdotV);
 	float3 Fs = _specular + (1 - _specular) * Schlick(LdotH);

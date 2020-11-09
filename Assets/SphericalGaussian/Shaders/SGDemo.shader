@@ -1,4 +1,4 @@
-﻿Shader "Unlit/SGDemo"
+﻿Shader "SG/SGDemo"
 {
     Properties
     {

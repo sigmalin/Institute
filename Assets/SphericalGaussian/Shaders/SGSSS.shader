@@ -1,13 +1,16 @@
-﻿Shader "SG/Ashikhmin"
+﻿Shader "SG/SGSSS"
 {
     Properties
     {
-        _diffuseColor ("Diffuse Color", COLOR) = (1,1,1,1)
-		_specularColor ("Specular Color", COLOR) = (1,1,1,1)
+        _baseColor ("Base Color", Color) = (1,1,1,1)
+				
+		_specularColor ("Specular Color", Color) = (1,1,1,1)
 		_lambda ("Lambda", Range(1,400)) = 1
 		_mu ("Mu", Range(1,400)) = 1
-		
-		[Toggle] _ENABLE_INDICTOR ("enable indirect specular ?", Float) = 0
+
+		_ScatterAmtR ("Scatter Amt (R)", Range(0.0001, 1)) = 1
+		_ScatterAmtG ("Scatter Amt (G)", Range(0.0001, 1)) = 1
+		_ScatterAmtB ("Scatter Amt (B)", Range(0.0001, 1)) = 1
     }
     SubShader
     {
@@ -24,13 +27,13 @@
             #pragma vertex vert
             #pragma fragment frag
 			#pragma multi_compile_fwdbase
-			#pragma multi_compile  _ENABLE_INDICTOR_OFF _ENABLE_INDICTOR_ON
 
 			#include "UnityLightingCommon.cginc"
 			#include "AutoLight.cginc"
             #include "UnityCG.cginc"
 
 			#include "SphericalGaussDiffuse.cginc"
+			#include "SphericalGaussSpecular.cginc"
 			#include "Ashikhmin.cginc"
 			#include "ToneMapping.cginc"
 
@@ -44,16 +47,21 @@
 
             struct v2f
             {
-                float4 pos : SV_POSITION;
-				float2 uv : TEXCOORD0;
+				float4 pos : SV_POSITION;
+                float2 uv : TEXCOORD0;
 				float3 normalDir : TEXCOORD3;
                 float3 tangentDir : TEXCOORD4;
                 float3 bitangentDir : TEXCOORD5;
 				float4 posWorld : TEXCOORD6;
             };
+
+            float4 _baseColor;
 			
-			float4 _diffuseColor;
-            float4 _specularColor;
+			float _ScatterAmtR;
+			float _ScatterAmtG;
+			float _ScatterAmtB;
+
+			float4 _specularColor;
 			float _lambda;
 			float _mu;
 
@@ -71,36 +79,42 @@
 
             fixed4 frag (v2f i) : SV_Target
             {
-				float3 lightDirection = _WorldSpaceLightPos0.xyz;
-				float3 viewDirection = normalize(_WorldSpaceCameraPos.xyz - i.posWorld.xyz);
+                float3 lightDirection = _WorldSpaceLightPos0.xyz;
 
 				float3 normalDirection = normalize(i.normalDir);
 				float3 tangentDirection = normalize(i.tangentDir);
 				float3 bitangentDirection = normalize(i.bitangentDir);
+				
+				float NdotL = saturate(dot(normalDirection, lightDirection));
 
-				///
+				float3 viewDirection = normalize(_WorldSpaceCameraPos.xyz - i.posWorld.xyz);
+
 				float3 linearLightColor = _LightColor0.rgb;
-				float3 diffuseAlbedo   = _diffuseColor.rgb;
-				float3 specularAlbedo   = _specularColor.rgb;
+				float3 diffuseAlbedo   = _baseColor.rgb;
+				float3 specularAlbedo = _specularColor.rgb;
 				#ifdef UNITY_COLORSPACE_GAMMA
 				linearLightColor = GammaToLinearSpace (linearLightColor);
 				diffuseAlbedo = GammaToLinearSpace (diffuseAlbedo);
 				specularAlbedo = GammaToLinearSpace (specularAlbedo);
 				#endif
 
+				SG RedKernel   = NormalizedSG(lightDirection, 1 / _ScatterAmtR);
+				SG GreenKernel = NormalizedSG(lightDirection, 1 / _ScatterAmtG);
+				SG BlueKernel  = NormalizedSG(lightDirection, 1 / _ScatterAmtB);
+				
+				float3 diffuse = 0;
+				//diffuse.r = ApproximateCosineLobe(RedKernel  , normalDirection);
+				//diffuse.g = ApproximateCosineLobe(GreenKernel, normalDirection);
+				//diffuse.b = ApproximateCosineLobe(BlueKernel , normalDirection);
+				diffuse.r = SGIrradianceInnerProduct(RedKernel  , normalDirection).x;
+				diffuse.g = SGIrradianceInnerProduct(GreenKernel, normalDirection).x;
+				diffuse.b = SGIrradianceInnerProduct(BlueKernel , normalDirection).x;
+
+				// filmic
+				//diffuse = Filmic_tone_mapping(diffuse);
+				diffuse = diffuse * diffuseAlbedo * linearLightColor / PI;
+				
 				SG lightingLobe = DirectionalLightSG(lightDirection, 1, linearLightColor);
-
-				float3 diffuse = SGDiffuseInnerProduct(lightingLobe, normalDirection, diffuseAlbedo);
-
-				#ifdef _ENABLE_INDICTOR_ON 
-				float3 specular = AshikhminSpecularWithIndirect(
-									lightingLobe,
-									normalDirection, 
-									tangentDirection, 
-									bitangentDirection, 
-									viewDirection,
-									specularAlbedo, _lambda, _mu);
- 				#else
 				float3 specular = AshikhminSpecular(
 									lightingLobe,
 									normalDirection, 
@@ -108,15 +122,13 @@
 									bitangentDirection, 
 									viewDirection,
 									specularAlbedo, _lambda, _mu);
-				#endif
-				
 
-				float3 res = ACES_tone_mapping(diffuse + specular);
+				float3 res = ACES_tone_mapping((diffuse+specular)*2);
 				
 				#ifdef UNITY_COLORSPACE_GAMMA
 				res = LinearToGammaSpace (res);
 				#endif
-				return float4(res, 1);
+                return float4(res, 1);
             }
             ENDCG
         }

@@ -155,7 +155,7 @@ Shader "Urp/UrpUnlit"
 
             ZWrite On
             ColorMask 0
-            Cull[_Cull]
+            Cull Back
 
             HLSLPROGRAM
             #pragma exclude_renderers gles gles3 glcore

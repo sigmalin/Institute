@@ -24,7 +24,7 @@ public class GodRayRenderPassFeature : ScriptableRendererFeature
             shaderTagId = new ShaderTagId("UniversalForward");
             passSetting = setting;
 
-            Shader godRayShader = Shader.Find("MyUrp/MyGodRayShader");
+            Shader godRayShader = Shader.Find("Urp/UrpGodRayShader");
             if (godRayShader)
             {
                 godRayMaterial = new Material(godRayShader);

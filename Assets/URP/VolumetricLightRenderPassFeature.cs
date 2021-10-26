@@ -30,7 +30,7 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
             shaderTagId = new ShaderTagId("UniversalForward");
             passSetting = setting;
 
-            Shader volumetricLightShader = Shader.Find("Urp/VolumetricLightShader");
+            Shader volumetricLightShader = Shader.Find("Urp/UrpVolumetricLightShader");
             if (volumetricLightShader)
             {
                 volumetricLightMaterial = new Material(volumetricLightShader);

@@ -1,11 +1,12 @@
 // https://valeriomarty.medium.com/raymarched-volumetric-lighting-in-unity-urp-e7bc84d31604
+// https://zhuanlan.zhihu.com/p/124297905
 Shader "Urp/UrpVolumetricLightShader"
 {
     Properties
     {
         _MainTex("Texture", 2D) = "white" {}
     }
-        SubShader
+    SubShader
     {
         Tags { "RenderType" = "Opaque" "RenderPipeline" = "UniversalPipeline" }
         ZWrite Off
@@ -42,11 +43,13 @@ Shader "Urp/UrpVolumetricLightShader"
             SAMPLER(sampler_MainTex);
 
             CBUFFER_START(UnityPerMaterial)
-                real4x4 _ClipToWorld;
                 real _Scattering;
                 real _Steps;
                 real _MaxDistance;
                 real _JitterVolumetric;
+                
+                real _Extinction;
+                real _Absorbtion;
             CBUFFER_END
 
             real ShadowAtten(real3 worldPosition)
@@ -64,16 +67,26 @@ Shader "Urp/UrpVolumetricLightShader"
                 return ComputeWorldSpacePosition(uv, depth, UNITY_MATRIX_I_VP);
             }
 
-            // Mie scaterring approximated with Henyey-Greenstein phase function.
-            real ComputeScattering(real lightDotView)
+            real ComputeMieScattering(real lightDotView)
             {
                 real result = 1.0f - _Scattering * _Scattering;
                 result /= (4.0f * PI * pow(1.0f + _Scattering * _Scattering - (2.0f * _Scattering) * lightDotView, 1.5f));
                 return result;
             }
 
+            real ComputeRayleighScattering(real lightDotView)
+            {
+                return ((1 + lightDotView * lightDotView) * 3.0f) / (16.0f * PI);
+            }
+
+            real ComputeBeerLambert(real distance)
+            {
+                return exp(-distance * _Extinction);
+            }
+
             // return [0,1]
-            real random(real2 p) {
+            real random(real2 p) 
+            {
                 return frac(sin(dot(p, real2(41, 289))) * 45758.5453);
             }
 
@@ -89,7 +102,7 @@ Shader "Urp/UrpVolumetricLightShader"
             {
                 real3 cameraPos = _WorldSpaceCameraPos.xyz;
 
-                real3 lightDirection = -_MainLightPosition.xyz; // invert for mie scaterring
+                real3 lightDirection = -_MainLightPosition.xyz; // invert for scaterring
 
                 real3 worldPos = GetWorldPos(i.uv);
                 real3 vec = worldPos - cameraPos;
@@ -98,28 +111,30 @@ Shader "Urp/UrpVolumetricLightShader"
                 real rayLnegth = min(eyeDepth, _MaxDistance);
 
                 real stepLength = rayLnegth / _Steps;
-                real3 step = ray * stepLength;
+                real3 stepMove = ray * stepLength;
 
                 real rayStartOffset = random(i.uv) * stepLength * _JitterVolumetric / 100;
                 real3 currentPosition = cameraPos + rayStartOffset * ray;
 
-                real accumFog = 0;
+                real transmittance = 1;
+                real extinction = ComputeBeerLambert(stepLength);
+                real inScatter = max(0, extinction - _Absorbtion); // transform light dir out-scattering to view dir in-scattering
+                real phase = ComputeMieScattering(dot(ray, lightDirection));
+
+                real totalLight = 0;
 
                 for (real j = 0; j < _Steps - 1; j++)
                 {
                     real shadowMapValue = ShadowAtten(currentPosition);
+                    
+                    transmittance *= extinction;
 
-                    //if it is in light
-                    if (shadowMapValue > 0) {
-                        real kernelColor = ComputeScattering(dot(ray, lightDirection));
-                        accumFog += kernelColor;
-                    }
-                    currentPosition += step;
+                    totalLight += transmittance * inScatter * phase * stepLength * shadowMapValue;
+                    
+                    currentPosition += stepMove;
                 }
 
-                accumFog /= _Steps;
-
-                return accumFog;
+                return totalLight;
             }
             ENDHLSL
         }
@@ -228,17 +243,17 @@ Shader "Urp/UrpVolumetricLightShader"
                 real _Intensity;
             CBUFFER_END
 
-            v2f vert(appdata v)
-            {
-                v2f o;
-                o.vertex = TransformWorldToHClip(v.vertex);
-                o.uv = v.uv;
-                return o;
-            }
+                v2f vert(appdata v)
+                {
+                    v2f o;
+                    o.vertex = TransformWorldToHClip(v.vertex);
+                    o.uv = v.uv;
+                    return o;
+                }
 
-            real3 frag(v2f i) : SV_Target
-            {
-                real col = 0;
+                real3 frag(v2f i) : SV_Target
+                {
+                    real col = 0;
                 //based on https://eleni.mutantstargoat.com/hikiko/on-depth-aware-upsampling/ 
 
                 int offset = 0;

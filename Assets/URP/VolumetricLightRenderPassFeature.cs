@@ -76,6 +76,8 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
                     volumetricLightMaterial.SetFloat("_MaxDistance", passSetting.maxDistance);
                     volumetricLightMaterial.SetFloat("_JitterVolumetric", passSetting.jitter);
                     volumetricLightMaterial.SetFloat("_Intensity", passSetting.intensity);
+                    volumetricLightMaterial.SetFloat("_Extinction", passSetting.extinction * passSetting.extinction);
+                    volumetricLightMaterial.SetFloat("_Absorbtion", passSetting.absorbtion);
                     volumetricLightMaterial.SetFloat("_GaussSamples", passSetting.gaussBlur.samples);
                     volumetricLightMaterial.SetFloat("_GaussAmount", passSetting.gaussBlur.amount);
 
@@ -150,6 +152,7 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
     [System.Serializable]
     public class Setting
     {
+        [Range(-1, 1)]
         public float scatter = -0.4f;
 
         public float step = 25f;
@@ -159,6 +162,12 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
         public float jitter = 250f;
 
         public float intensity = 2.53f;
+
+        [Range(0, 1)]
+        public float extinction = 0.5f;
+
+        [Range(0, 1)]
+        public float absorbtion = 0.25f;
 
         public enum DownSample { off = 1, half = 2, third = 3, quarter = 4 };
         public DownSample downsampling = DownSample.off;

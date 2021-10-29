@@ -1,6 +1,5 @@
-// https://valeriomarty.medium.com/raymarched-volumetric-lighting-in-unity-urp-e7bc84d31604
 // https://zhuanlan.zhihu.com/p/124297905
-Shader "Urp/UrpVolumetricLightShader"
+Shader "MyUrp/MyVolumetricLightShader3"
 {
     Properties
     {
@@ -141,29 +140,25 @@ Shader "Urp/UrpVolumetricLightShader"
 
         Pass
         {
-            Name "Gaussian Blur X"
+            Name "Dual Kawase Down Sample"
 
             HLSLPROGRAM
-            #pragma vertex vertGaussianBlur
-            #pragma fragment fragGaussianBlur
-            #pragma multi_compile _ _GAUSSIAN_BLUR_X
+            #pragma vertex vertDownSample
+            #pragma fragment fragDownSample
 
-            #define _GAUSSIAN_BLUR_X
-
-            #include "GaussianBlur.hlsl"
+            #include "DualKawase.hlsl"
             ENDHLSL
         }
 
         Pass
         {
-            Name "Gaussian Blur Y"
+            Name "Dual Kawase Up Sample"
 
             HLSLPROGRAM
-            #pragma vertex vertGaussianBlur
-            #pragma fragment fragGaussianBlur
-            #pragma multi_compile _ _GAUSSIAN_BLUR_X
+            #pragma vertex vertUpSample
+            #pragma fragment fragUpSample
 
-            #include "GaussianBlur.hlsl"
+            #include "DualKawase.hlsl"
             ENDHLSL
         }
 
@@ -192,7 +187,7 @@ Shader "Urp/UrpVolumetricLightShader"
             v2f vert(appdata v)
             {
                 v2f o;
-                o.vertex = TransformWorldToHClip(v.vertex);
+                o.vertex = TransformWorldToHClip(v.vertex.xyz);
                 o.uv = v.uv;
                 return o;
             }
@@ -243,17 +238,18 @@ Shader "Urp/UrpVolumetricLightShader"
                 real _Intensity;
             CBUFFER_END
 
-                v2f vert(appdata v)
-                {
-                    v2f o;
-                    o.vertex = TransformWorldToHClip(v.vertex);
-                    o.uv = v.uv;
-                    return o;
-                }
+            
+            v2f vert(appdata v)
+            {
+                v2f o;
+                o.vertex = TransformWorldToHClip(v.vertex.xyz);
+                o.uv = v.uv;
+                return o;
+            }
 
-                real3 frag(v2f i) : SV_Target
-                {
-                    real col = 0;
+            real3 frag(v2f i) : SV_Target
+            {
+                real col = 0;
                 //based on https://eleni.mutantstargoat.com/hikiko/on-depth-aware-upsampling/ 
 
                 int offset = 0;
@@ -291,26 +287,25 @@ Shader "Urp/UrpVolumetricLightShader"
                 col = 0;
                 switch (offset) {
                     case 0:
-                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(0, 1));
+                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(0, 1)).r;
                     break;
                     case 1:
-                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(0, -1));
+                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(0, -1)).r;
                     break;
                     case 2:
-                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(1, 0));
+                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(1, 0)).r;
                     break;
                     case 3:
-                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(-1, 0));
+                    col = _Volumetric.Sample(sampler_Volumetric, i.uv, int2(-1, 0)).r;
                     break;
                     default:
-                    col = _Volumetric.Sample(sampler_Volumetric, i.uv);
+                    col = _Volumetric.Sample(sampler_Volumetric, i.uv).r;
                     break;
                 }
 
-
                 real3 finalShaft = saturate(col) * _Intensity * _MainLightColor.rgb;
 
-                real3 screen = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv);
+                real3 screen = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, i.uv).rgb;
                 return (screen + finalShaft);// / (1 + finalShaft);
             }
             ENDHLSL

@@ -1,0 +1,68 @@
+#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
+
+float2 _RT_Size;
+float3 _WorldCameraPos;
+float3 _LightDirection;
+
+float4 _Sphere;
+
+RWTexture2D<float4> _RayMarchingTexture;
+Texture2D<float4> _CameraColorTexture;
+Texture2D<float4> _CameraDepthTexture;
+SAMPLER(sampler_CameraColorTexture);
+SAMPLER(sampler_CameraDepthTexture);
+
+
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSMain
+
+float dist_func(float3 pos, float3 center, float size)
+{
+    return length(pos - center) - size;
+}
+
+float3 getNormal(float3 pos, float3 center)
+{
+    return normalize(pos - center);
+}
+
+[numthreads(8,8,1)]
+void CSMain (uint3 id : SV_DispatchThreadID)
+{
+    float2 screenUV = id.xy / _RT_Size;
+
+    _RayMarchingTexture[id.xy] = _CameraColorTexture.SampleLevel(sampler_CameraColorTexture, screenUV, 0);
+    
+    float  depth = _CameraDepthTexture.SampleLevel(sampler_CameraDepthTexture, screenUV, 0).r;
+
+#if !UNITY_REVERSED_Z
+    // Adjust z to match NDC for OpenGL
+    depth = lerp(UNITY_NEAR_CLIP_VALUE, 1, depth);
+#endif
+
+    float3 PosWS = ComputeWorldSpacePosition(screenUV, depth, UNITY_MATRIX_I_VP);
+    float3 ray = normalize(PosWS - _WorldCameraPos);
+    float maxDistance = length(PosWS - _WorldCameraPos);
+
+    float mov = 0;
+
+    for (int i = 0; i < 256; ++i)
+    {
+        float3 cur = _WorldCameraPos + ray * mov;
+
+        float D = dist_func(cur, _Sphere.xyz, _Sphere.w);
+        if (D < 0.0001)
+        {
+            float3 normalDirection = getNormal(cur, _Sphere.xyz);
+            float NdotL = dot(normalDirection, _LightDirection) * 0.5 + 0.5;
+            _RayMarchingTexture[id.xy] = float4(NdotL, NdotL, NdotL, 1);
+            break;
+        }
+        mov += D;
+
+        if (maxDistance < mov)
+        {
+            break;
+        }
+    }
+}

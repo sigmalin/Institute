@@ -13,9 +13,10 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
         protected ShaderTagId shaderTagId;
 
         protected RenderTargetHandle volumetricHandle;
-        protected RenderTargetHandle gaussianBlurHandle;
         protected RenderTargetHandle lowResDepthHandle;
         protected RenderTargetHandle compositingHandle;
+
+        protected int[] dualKawaseIds;
 
         protected Material volumetricLightMaterial;
 
@@ -24,10 +25,10 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
         public VolumetricLightRenderPass(Setting setting)
         {
             volumetricHandle.Init("_Volumetric");
-            gaussianBlurHandle.Init("_GaussianBlur");
             lowResDepthHandle.Init("_LowResDepth");
             compositingHandle.Init("_Compositing");
             shaderTagId = new ShaderTagId("UniversalForward");
+            dualKawaseIds = null;
             passSetting = setting;
 
             Shader volumetricLightShader = Shader.Find("Urp/UrpVolumetricLightShader");
@@ -78,14 +79,28 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
                     volumetricLightMaterial.SetFloat("_Intensity", passSetting.intensity);
                     volumetricLightMaterial.SetFloat("_Extinction", passSetting.extinction * passSetting.extinction);
                     volumetricLightMaterial.SetFloat("_Absorbtion", passSetting.absorbtion);
-                    volumetricLightMaterial.SetFloat("_GaussSamples", passSetting.gaussBlur.samples);
-                    volumetricLightMaterial.SetFloat("_GaussAmount", passSetting.gaussBlur.amount);
+                    volumetricLightMaterial.SetFloat("_Offset", passSetting.dualKawase.offset);
 
                     // ray marching
                     cmd.Blit(currentTarget, volumetricHandle.Identifier(), volumetricLightMaterial, 0);
-                    // blur
-                    cmd.Blit(volumetricHandle.Identifier(), gaussianBlurHandle.Identifier(), volumetricLightMaterial, 1);
-                    cmd.Blit(gaussianBlurHandle.Identifier(), volumetricHandle.Identifier(), volumetricLightMaterial, 2);
+                    // dual kaease
+                    if (dualKawaseIds != null)
+                    {
+                        RenderTargetIdentifier cur = volumetricHandle.Identifier();
+                        // down sample
+                        for (int i = 0; i < dualKawaseIds.Length; ++i)
+                        {
+                            cmd.Blit(cur, dualKawaseIds[i], volumetricLightMaterial, 1);
+                            cur = dualKawaseIds[i];
+                        }
+                        // up sample
+                        for (int i = dualKawaseIds.Length - 2; 0 <= i; --i)
+                        {
+                            cmd.Blit(cur, dualKawaseIds[i], volumetricLightMaterial, 2);
+                            cur = dualKawaseIds[i];
+                        }
+                        cmd.Blit(dualKawaseIds[0], volumetricHandle.Identifier(), volumetricLightMaterial, 2);
+                    }
 
                     cmd.SetGlobalTexture(volumetricHandle.id, volumetricHandle.Identifier());
 
@@ -100,7 +115,6 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
                 }
                 catch
                 {
-
                 }
             }
 
@@ -123,13 +137,13 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
             descriptor1.width /= divider;
             descriptor1.height /= divider;
 
+            createDualKawase(cmd, descriptor1.width, descriptor1.height);
+
             RenderTextureDescriptor descriptor2 = cameraTextureDescriptor;
             descriptor2.msaaSamples = 1;
 
             cmd.GetTemporaryRT(volumetricHandle.id, descriptor1, FilterMode.Bilinear);
             ConfigureTarget(volumetricHandle.Identifier());
-            cmd.GetTemporaryRT(gaussianBlurHandle.id, descriptor1, FilterMode.Bilinear);
-            ConfigureTarget(gaussianBlurHandle.Identifier());
             cmd.GetTemporaryRT(lowResDepthHandle.id, descriptor1, FilterMode.Bilinear);
             ConfigureTarget(lowResDepthHandle.Identifier());
             cmd.GetTemporaryRT(compositingHandle.id, descriptor2, FilterMode.Bilinear);
@@ -141,9 +155,54 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
         public override void FrameCleanup(CommandBuffer cmd)
         {
             cmd.ReleaseTemporaryRT(volumetricHandle.id);
-            cmd.ReleaseTemporaryRT(gaussianBlurHandle.id);
             cmd.ReleaseTemporaryRT(lowResDepthHandle.id);
             cmd.ReleaseTemporaryRT(compositingHandle.id);
+
+            releaseDualKawase(cmd);
+        }
+        
+        private void createDualKawase(CommandBuffer cmd, int width, int height)
+        {
+            int dualKawaseCount = 0;
+
+            const int BOUND = 128;
+
+            int w = Mathf.CeilToInt(width * passSetting.dualKawase.resolutionScale);
+            int h = Mathf.CeilToInt(height * passSetting.dualKawase.resolutionScale);
+
+            while (BOUND <= w && BOUND <= h)
+            {
+                ++dualKawaseCount;
+
+                w = Mathf.CeilToInt(w * passSetting.dualKawase.resolutionScale);
+                h = Mathf.CeilToInt(h * passSetting.dualKawase.resolutionScale);
+            }
+
+            dualKawaseCount = Mathf.Min(dualKawaseCount, passSetting.dualKawase.maxSample);
+
+            if (0 < dualKawaseCount)
+            {
+                dualKawaseIds = new int[dualKawaseCount];
+                for(int i = 0; i < dualKawaseCount; ++i)
+                {
+                    width = Mathf.CeilToInt(width * passSetting.dualKawase.resolutionScale);
+                    height = Mathf.CeilToInt(height * passSetting.dualKawase.resolutionScale);
+                    dualKawaseIds[i] = Shader.PropertyToID(string.Format("_dualKawase{0}",i));
+                    cmd.GetTemporaryRT(dualKawaseIds[i], width, height, 0, FilterMode.Bilinear, RenderTextureFormat.R16);
+                }
+            }
+        }
+
+        private void releaseDualKawase(CommandBuffer cmd)
+        {
+            if (dualKawaseIds == null) return;
+
+            for (int i = 0; i < dualKawaseIds.Length; ++i)
+            {
+                cmd.ReleaseTemporaryRT(dualKawaseIds[i]);
+            }
+
+            dualKawaseIds = null;
         }
     }
 
@@ -155,12 +214,14 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
         [Range(-1, 1)]
         public float scatter = -0.4f;
 
-        public float step = 25f;
+        [Range(1, 50)]
+        public int step = 25;
 
         public float maxDistance = 75f;
 
         public float jitter = 250f;
 
+        [Range(0.1f, 3f)]
         public float intensity = 2.53f;
 
         [Range(0, 1)]
@@ -173,18 +234,25 @@ public class VolumetricLightRenderPassFeature : ScriptableRendererFeature
         public DownSample downsampling = DownSample.off;
 
         [System.Serializable]
-        public class GaussBlur
+        public class DualKawase
         {
-            public float amount;
-            public float samples;
+            [Range(0.4f, 0.9f)]
+            public float resolutionScale;
 
-            public GaussBlur()
+            [Range(1, 8)]
+            public int offset;
+
+            [Range(1, 8)]
+            public int maxSample;
+
+            public DualKawase()
             {
-                amount = 100f;
-                samples = 2f;
+                resolutionScale = 0.5f;
+                offset = 1;
+                maxSample = 2;
             }
         }
-        public GaussBlur gaussBlur = new GaussBlur();
+        public DualKawase dualKawase = new DualKawase();
     }
 
     public Setting setting = new Setting();

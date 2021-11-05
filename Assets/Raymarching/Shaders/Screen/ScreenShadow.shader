@@ -113,7 +113,11 @@
 				o.uv = v.uv;
 
 				//float4 clip = float4((v.uv.xy * 2.0f - 1.0f) * float2(1, -1), 0.0f, 1.0f);
-				float4 clip = float4(o.vertex.xy, 0.0, 1.0);
+				#if UNITY_UV_STARTS_AT_TOP  
+                float4 clip = float4(o.vertex.xy * float2(1,-1), 0.0, 1.0);
+#else
+                float4 clip = float4(o.vertex.xy, 0.0, 1.0);
+#endif
 				o.worldDirection = mul(_ClipToWorld, clip) -_WorldSpaceCameraPos;                
                 return o;
             }

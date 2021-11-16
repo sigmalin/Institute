@@ -4,20 +4,13 @@
 
 #include "PerlinNoise.cginc"
 #include "SphericalHammersley.cginc"
+#include "GPUInstParticleData.cginc"
 
-
-struct particle
-{
-    float3 position;
-	float3 color;
-	float3 velocity;
-	float scale;
-	float lifeTime;
-	float delayTime;
-};
 
 // particle
 RWStructuredBuffer<particle> particleBuffer;
+
+float3 _particlePosWorld;
 
 float _DeltaTime;
 
@@ -91,7 +84,7 @@ void initParticle(uint idx, uint rand)
 
 	float radius = Rand(idx + rand);
 
-	particleBuffer[idx].position = pos * radius;
+	particleBuffer[idx].position = pos * radius + _particlePosWorld;
 
 	particleBuffer[idx].color = (pos.xzy + 1.0) * 0.5;
 

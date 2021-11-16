@@ -3,15 +3,19 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-public class GPUInstParticle : MonoBehaviour
+public class GPUInstParticle : MonoBehaviour, IGPUInstParticle
 {
-    public ComputeShader cs;
+    public ComputeShader csParticle;
+
+    public ComputeShader csCulling;
 
     public Material material;
 
+    public bool enableGpuCulling;
+
     Mesh cube;
 
-    int local2WorldID;
+    int particlePosWorldID;
 
     int particleBufferID;
     int particleCountID;
@@ -24,9 +28,13 @@ public class GPUInstParticle : MonoBehaviour
     int perlinBufferID;
     int octavesID;
 
+    int cullResultID;
+    int frustumPlaneID;
+
     ComputeBuffer particleBuffer;
     ComputeBuffer argBuffer;
     ComputeBuffer perlinBuffer;
+    ComputeBuffer cullResultBuffer;
 
     bool isInitial;
 
@@ -38,20 +46,10 @@ public class GPUInstParticle : MonoBehaviour
     const float SPEED_FACTOR = 4f;
     const float LIFT_TIME = 5f;
 
-    struct particle
-    {
-        public Vector3 position;
-        public Vector3 color;
-        public Vector3 velocity;
-        public float scale;
-        public float lifeTime;
-        public float delayTime;
-    };
-
     // Start is called before the first frame update
     void Start()
     {
-        local2WorldID = Shader.PropertyToID("_LocalToWorld");
+        particlePosWorldID = Shader.PropertyToID("_particlePosWorld");
 
         particleBufferID = Shader.PropertyToID("particleBuffer");
         particleCountID = Shader.PropertyToID("_ParticleCount");
@@ -64,33 +62,15 @@ public class GPUInstParticle : MonoBehaviour
         perlinBufferID = Shader.PropertyToID("_Perm");
         octavesID = Shader.PropertyToID("_Octaves");
 
+        cullResultID = Shader.PropertyToID("cullResult");
+        frustumPlaneID = Shader.PropertyToID("_FrustumPlane");
+
         isInitial = false;
-    }
-
-    // Update is called once per frame
-    void LateUpdate()
-    {
-        if (!GPUInstParticleRenderPassFeature.Instance) return;
-
-        if (isBufferReady() == false) return;
-
-        CommandBuffer cmd = GPUInstParticleRenderPassFeature.Instance.GetCommand();
-        if (cmd == null) return;
-
-        try
-        {
-            Process(cmd);
-            Render(cmd);
-        }
-
-        catch
-        {
-        }
     }
 
     private void OnEnable()
     {
-        Initialized();
+        Initialize();
     }
 
     private void OnDisable()
@@ -98,7 +78,34 @@ public class GPUInstParticle : MonoBehaviour
         Release();
     }
 
-    private void Initialized()
+    // Update is called once per frame
+    void LateUpdate()
+    {
+        if (isValid() == false) return;
+
+        if (GPUInstParticleRenderPassFeature.Instance)
+        {
+            GPUInstParticleRenderPassFeature.Instance.Register(this);
+
+            CommandBuffer cmd = CommandBufferPool.Get();
+
+            try
+            {
+                Process(cmd);
+                Cull(cmd, Camera.main);
+                Graphics.ExecuteCommandBuffer(cmd);
+            }
+            catch
+            {
+                
+            }
+
+            cmd.Clear();
+            CommandBufferPool.Release(cmd);
+        }        
+    }
+
+    private void Initialize()
     {
         Release();
 
@@ -110,6 +117,8 @@ public class GPUInstParticle : MonoBehaviour
         argBuffer = new ComputeBuffer(ARG_BUFFER_SIZE, sizeof(uint), ComputeBufferType.IndirectArguments);
 
         initPartialBuffer();
+
+        initCullResultBuffer();
 
         initPerlinNoise(Time.time);
     }
@@ -139,6 +148,12 @@ public class GPUInstParticle : MonoBehaviour
             perlinBuffer.Release();
             perlinBuffer = null;
         }
+
+        if(cullResultBuffer != null)
+        {
+            cullResultBuffer.Release();
+            cullResultBuffer = null;
+        }
     }
 
     private void initPartialBuffer()
@@ -146,6 +161,11 @@ public class GPUInstParticle : MonoBehaviour
         particleBuffer = new ComputeBuffer(PARTICLE_COUNT, PARTICLE_SIZE);
 
         isInitial = false;
+    }
+
+    private void initCullResultBuffer()
+    {
+        cullResultBuffer = new ComputeBuffer(PARTICLE_COUNT, PARTICLE_SIZE, ComputeBufferType.Append);
     }
 
     private void initPerlinNoise(float _seed)
@@ -191,21 +211,23 @@ public class GPUInstParticle : MonoBehaviour
         perlinBuffer.SetData(p);
     }
 
-    private bool isBufferReady()
+    private bool isValid()
     {
-        return (particleBuffer != null) && (argBuffer != null) && (perlinBuffer != null);
+        return GPUInstParticleRenderPassFeature.Instance
+            && (particleBuffer != null) && (argBuffer != null) 
+            && (perlinBuffer != null) && (cullResultBuffer != null)
+            && (material != null) && (cube != null) 
+            && (csParticle != null) && (csCulling != null);
     }
 
     private void Process(CommandBuffer _cmd)
     {
-        if (cs == null) return;
-
-        int kernel = isInitial ? cs.FindKernel("CSMain") : cs.FindKernel("CSInitial");
+        int kernel = isInitial ? csParticle.FindKernel("CSMain") : csParticle.FindKernel("CSInitial");
 
         isInitial = true;
 
         uint sizeX;
-        cs.GetKernelThreadGroupSizes(
+        csParticle.GetKernelThreadGroupSizes(
             kernel,
             out sizeX,
             out _,
@@ -213,31 +235,57 @@ public class GPUInstParticle : MonoBehaviour
         );
 
         // set perlin
-        cs.SetBuffer(kernel, perlinBufferID, perlinBuffer);
-        cs.SetInt(octavesID, 2);
+        csParticle.SetBuffer(kernel, perlinBufferID, perlinBuffer);
+        csParticle.SetInt(octavesID, 2);
 
         // set curl
-        cs.SetBuffer(kernel, particleBufferID, particleBuffer);
-        cs.SetInt(particleCountID, PARTICLE_COUNT);
-        cs.SetFloat(noiseScaleID, NOISE_SCALE);
-        cs.SetFloat(speedFactorID, SPEED_FACTOR);
-        cs.SetFloat(liftTimeID, LIFT_TIME);
+        csParticle.SetBuffer(kernel, particleBufferID, particleBuffer);
+        csParticle.SetInt(particleCountID, PARTICLE_COUNT);
+        csParticle.SetFloat(noiseScaleID, NOISE_SCALE);
+        csParticle.SetFloat(speedFactorID, SPEED_FACTOR);
+        csParticle.SetFloat(liftTimeID, LIFT_TIME);
 
-        cs.SetFloat(deltaTimeID, Time.deltaTime);
-        cs.SetFloat(elapsedTimeID, Time.time);
+        csParticle.SetFloat(deltaTimeID, Time.deltaTime);
+        csParticle.SetFloat(elapsedTimeID, Time.time);
 
-        _cmd.DispatchCompute(cs, kernel, 
+        csParticle.SetVector(particlePosWorldID, this.transform.position);
+
+        _cmd.DispatchCompute(csParticle, kernel, 
             Mathf.CeilToInt((PARTICLE_COUNT + sizeX - 1) / sizeX),
             1, 1);
     }
 
-    private void Render(CommandBuffer _cmd)
+    private void Cull(CommandBuffer _cmd, Camera _cam)
     {
-        if (material == null) return;
+        if (enableGpuCulling == false) return;
 
-        material.SetBuffer(particleBufferID, particleBuffer);
-        material.SetMatrix(local2WorldID, this.transform.localToWorldMatrix);
+        int kernel = csCulling.FindKernel("CSMain");
 
+        uint sizeX;
+        csCulling.GetKernelThreadGroupSizes(
+            kernel,
+            out sizeX,
+            out _,
+            out _
+        );
+
+        Vector4[] planes = CullingTool.GetFrustumPlane(_cam);
+
+        cullResultBuffer.SetCounterValue(0);
+
+        csCulling.SetBuffer(kernel, particleBufferID, particleBuffer);
+        csCulling.SetBuffer(kernel, cullResultID, cullResultBuffer);
+
+        csCulling.SetInt(particleCountID, PARTICLE_COUNT);
+        csCulling.SetVectorArray(frustumPlaneID, planes);
+
+        _cmd.DispatchCompute(csCulling, kernel,
+            Mathf.CeilToInt((PARTICLE_COUNT + sizeX - 1) / sizeX),
+            1, 1);
+    }
+
+    public bool onRender(CommandBuffer _cmd, Camera _cam)
+    {
         // Indirect args
         uint[] args = new uint[ARG_BUFFER_SIZE]
         {
@@ -247,7 +295,7 @@ public class GPUInstParticle : MonoBehaviour
         const int SUBMESH_INDEX = 0;
         const int SHADER_PASS = 0;
 
-        if(cube)
+        if (cube)
         {
             args[0] = (uint)cube.GetIndexCount(SUBMESH_INDEX);  // index count per instance
             args[1] = (uint)PARTICLE_COUNT;                     // instance count
@@ -258,6 +306,18 @@ public class GPUInstParticle : MonoBehaviour
 
         argBuffer.SetData(args);
 
+        // cull
+        if(enableGpuCulling)
+        {
+            ComputeBuffer.CopyCount(cullResultBuffer, argBuffer, sizeof(uint));
+
+            material.SetBuffer(particleBufferID, cullResultBuffer);
+        }
+        else
+        {
+            material.SetBuffer(particleBufferID, particleBuffer);
+        }
+
         _cmd.DrawMeshInstancedIndirect(
             cube,
             SUBMESH_INDEX,
@@ -265,5 +325,7 @@ public class GPUInstParticle : MonoBehaviour
             SHADER_PASS,
             argBuffer
             );
+
+        return true;
     }
 }

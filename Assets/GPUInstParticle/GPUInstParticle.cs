@@ -284,7 +284,7 @@ public class GPUInstParticle : MonoBehaviour, IGPUInstParticle
             1, 1);
     }
 
-    public bool onRender(CommandBuffer _cmd, Camera _cam)
+    public bool onRender(CommandBuffer _cmd)
     {
         // Indirect args
         uint[] args = new uint[ARG_BUFFER_SIZE]

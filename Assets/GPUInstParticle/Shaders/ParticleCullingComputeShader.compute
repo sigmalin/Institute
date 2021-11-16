@@ -1,0 +1,38 @@
+// https://zhuanlan.zhihu.com/p/376801370
+#pragma kernel CSMain
+
+#include "GPUInstParticleData.cginc"
+
+int _ParticleCount;
+
+float4 _FrustumPlane[6];
+
+StructuredBuffer<particle> particleBuffer;
+
+AppendStructuredBuffer<particle> cullResult;
+
+
+bool IsOutsideThePlane(float4 plane, float3 pos)
+{
+    if ((dot(plane.xyz, pos) + plane.w) > 0)
+        return true;
+    return false;
+}
+
+[numthreads(64,1,1)]
+void CSMain (uint id : SV_DispatchThreadID)
+{
+	if (_ParticleCount <= (int)id) return;
+	
+	if (particleBuffer[id].scale == 0) return;
+	
+	float3 pos = particleBuffer[id].position;
+
+	for (int i = 0; i < 6; i++)
+	{
+		if (IsOutsideThePlane(_FrustumPlane[i], pos) == true)
+			return;
+	}
+
+	cullResult.Append(particleBuffer[id]);
+}

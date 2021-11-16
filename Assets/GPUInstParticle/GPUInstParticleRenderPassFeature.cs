@@ -7,19 +7,16 @@ public class GPUInstParticleRenderPassFeature : ScriptableRendererFeature
 {
     class GPUInstParticleRenderPass : ScriptableRenderPass
     {
-        Queue<CommandBuffer> commandQueue;
+        Queue<IGPUInstParticle> particleQueue;
 
-        public bool isReady { get; set; }
-
-        public GPUInstParticleRenderPass(Queue<CommandBuffer> _queue)
+        public GPUInstParticleRenderPass(Queue<IGPUInstParticle> _queue)
         {
-            commandQueue = _queue;
-            isReady = false;
+            particleQueue = _queue;
         }
 
-        private bool Invalid()
+        private bool isValid()
         {
-            return !SystemInfo.supportsComputeShaders;
+            return SystemInfo.supportsComputeShaders;
         }
 
         // This method is called before executing the render pass.
@@ -37,25 +34,32 @@ public class GPUInstParticleRenderPassFeature : ScriptableRendererFeature
         // You don't have to call ScriptableRenderContext.submit, the render pipeline will call it at specific points in the pipeline.
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
-            if (Invalid())
+            if (isValid())
             {
-                while(commandQueue.Count != 0)
+                CommandBuffer cmd = CommandBufferPool.Get();
+
+                var etor = particleQueue.GetEnumerator();
+
+                try
                 {
-                    CommandBuffer cmd = commandQueue.Dequeue();
-                    cmd.Clear();
-                    CommandBufferPool.Release(cmd);
+                    while (etor.MoveNext())
+                    {
+                        etor.Current.onRender(cmd);
+                    }
                 }
-            }
-            else
-            {
-                while (commandQueue.Count != 0)
+                catch
                 {
-                    CommandBuffer cmd = commandQueue.Dequeue();
-                    context.ExecuteCommandBuffer(cmd);
-                    cmd.Clear();
-                    CommandBufferPool.Release(cmd);
+
                 }
+
+                etor.Dispose();
+
+                context.ExecuteCommandBuffer(cmd);
+                cmd.Clear();
+                CommandBufferPool.Release(cmd);
             }
+
+            particleQueue.Clear();
         }
 
         // Cleanup any allocated resources that were created during the execution of this render pass.
@@ -66,7 +70,7 @@ public class GPUInstParticleRenderPassFeature : ScriptableRendererFeature
 
     GPUInstParticleRenderPass m_ScriptablePass;
 
-    Queue<CommandBuffer> m_CommandQueue;
+    Queue<IGPUInstParticle> m_ParticleQueue;
 
     public static GPUInstParticleRenderPassFeature Instance { private set; get; }
 
@@ -75,9 +79,9 @@ public class GPUInstParticleRenderPassFeature : ScriptableRendererFeature
     {
         GPUInstParticleRenderPassFeature.Instance = this;
 
-        m_CommandQueue = new Queue<CommandBuffer>();
+        m_ParticleQueue = new Queue<IGPUInstParticle>();
 
-        m_ScriptablePass = new GPUInstParticleRenderPass(m_CommandQueue);
+        m_ScriptablePass = new GPUInstParticleRenderPass(m_ParticleQueue);
 
         // Configures where the render pass should be injected.
         m_ScriptablePass.renderPassEvent = RenderPassEvent.AfterRenderingOpaques;
@@ -87,18 +91,15 @@ public class GPUInstParticleRenderPassFeature : ScriptableRendererFeature
     // This method is called when setting up the renderer once per-camera.
     public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)
     {
-        m_ScriptablePass.isReady = true;
         renderer.EnqueuePass(m_ScriptablePass);
     }
 
-    public CommandBuffer GetCommand()
+    public void Register(IGPUInstParticle _particle)
     {
-        if (m_ScriptablePass.isReady == false) return null;
-
-        CommandBuffer cmd = CommandBufferPool.Get();
-        m_CommandQueue.Enqueue(cmd);
-
-        return cmd;
+        if(m_ParticleQueue != null)
+        {
+            m_ParticleQueue.Enqueue(_particle);
+        }
     }
 }
 

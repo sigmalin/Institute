@@ -11,7 +11,7 @@ public class MobileTouch : ITouch
 
     public Vector2 getTouchPos()
     {
-        if (!isTouchScreen() == false) return Vector2.zero;
+        if (isTouchScreen() == false) return Vector2.zero;
         return Input.GetTouch(0).position;
     }
 }

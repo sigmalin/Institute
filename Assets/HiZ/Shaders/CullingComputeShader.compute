@@ -1,0 +1,59 @@
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSCulling
+
+StructuredBuffer<float3> postionBuffer;
+
+int _ObjectCount;
+
+float _ObjectRadius;
+
+float3 cameraDir;
+float tanHalfFov;
+float4x4 matrixVP;
+
+float2 _RT_Size;
+uint _MaxMipLevel;
+
+Texture2D _HiZTexture;
+
+AppendStructuredBuffer<float3> cullingResult;
+
+[numthreads(64,1,1)]
+void CSCulling (uint id : SV_DispatchThreadID)
+{
+	if (_ObjectCount <= (int)id) return;
+
+	float3 objPos = postionBuffer[id];
+
+	float4 clipPos = mul(matrixVP, float4(objPos - (cameraDir * _ObjectRadius), 1));
+	
+	// clipPos.xy [-w,w], plus 0.7 for flexible
+	if (clipPos.w + 0.7 < max(abs(clipPos.x), abs(clipPos.y))) return;
+
+	// width (world space) = width (clip space)
+	// length of x-axis in clip space = tanHalfFov * clipPos.w * 2
+	// width (screen space) = width (clip space) / length of x-axis in clip space * screen width
+	//                      = (_ObjectRadius * 2) / (tanHalfFov * clipPos.w * 2) * texture width
+	float screenWidth = _ObjectRadius / (tanHalfFov * clipPos.w) * _RT_Size.x;
+
+	uint mips = (uint)clamp(log2(screenWidth), 0, _MaxMipLevel);
+	uint texScale = 1 << mips;
+
+	// remap clipPos (x,y) = [-w,w], (z) = [0,w] to screenPos [0,1]
+	clipPos.xyz /= clipPos.w;
+	clipPos.xy = (clipPos.xy + 1) * 0.5;
+
+	uint2 uv = uint2(clipPos.xy * _RT_Size / texScale);
+	uint2 uv0 = uv + uint2(0, 0);
+	uint2 uv1 = uv + uint2(0, 1);
+	uint2 uv2 = uv + uint2(1, 0);
+	uint2 uv3 = uv + uint2(1, 1);
+	float mipD = min(
+					min(_HiZTexture.mips[mips][uv0].r, _HiZTexture.mips[mips][uv1].r),
+					min(_HiZTexture.mips[mips][uv2].r, _HiZTexture.mips[mips][uv3].r)
+				);
+
+	if (clipPos.z < mipD) return;
+
+	cullingResult.Append(objPos);
+}

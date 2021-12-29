@@ -1,0 +1,129 @@
+// https://zhuanlan.zhihu.com/p/396979267
+// https://zhuanlan.zhihu.com/p/362713511
+// Each #kernel tells which function to compile; you can have many kernels
+#pragma kernel CSCullingBox
+
+StructuredBuffer<float3> postionBuffer;
+
+int _ObjectCount;
+
+float3 _boundMin;
+float3 _boundMax;
+
+float4x4 matrixVP;
+
+bool _isOpenGL;
+
+Texture2D _HiZTexture;
+
+AppendStructuredBuffer<float3> cullingResult;
+
+bool IsInClipSpace(float4 clipSpacePosition)
+{
+    if (clipSpacePosition.w < max(abs(clipSpacePosition.x), abs(clipSpacePosition.y))) {
+        return false;
+    }
+
+    float nearClipZ = _isOpenGL ? -clipSpacePosition.w : 0.0;
+    return nearClipZ < clipSpacePosition.z && clipSpacePosition.z < clipSpacePosition.w;
+}
+
+float GetFarestDepth(float depth1, float depth2)
+{
+    return _isOpenGL ? max(depth1, depth2) : min(depth1, depth2);
+}
+
+bool IsBehide(float srcDepth, float destDepth) 
+{
+    return _isOpenGL ? destDepth < srcDepth : srcDepth < destDepth;
+}
+
+[numthreads(64,1,1)]
+void CSCullingBox(uint id : SV_DispatchThreadID)
+{
+    if (_ObjectCount <= (int)id) return;
+
+    float3 centerPos = postionBuffer[id];
+
+    float3 boundVerts[8];
+    boundVerts[0] = _boundMin;
+    boundVerts[1] = _boundMax;
+    boundVerts[2] = float3(_boundMax.x, _boundMax.y, _boundMin.z);
+    boundVerts[3] = float3(_boundMax.x, _boundMin.y, _boundMax.z);
+    boundVerts[4] = float3(_boundMax.x, _boundMin.y, _boundMin.z);
+    boundVerts[5] = float3(_boundMin.x, _boundMax.y, _boundMax.z);
+    boundVerts[6] = float3(_boundMin.x, _boundMax.y, _boundMin.z);
+    boundVerts[7] = float3(_boundMin.x, _boundMin.y, _boundMax.z);
+
+    float minNdcX = 1, minNdcY = 1, minNdcZ = 1;
+    float maxNdcX = -1, maxNdcY = -1, maxNdcZ = -1;
+
+    bool isInSide = false;
+    for (int i = 0; i < 8; ++i) {
+        float4 worldSpace = float4(centerPos + boundVerts[i], 1.0);
+        float4 clipSpece = mul(matrixVP, worldSpace);
+
+        if (isInSide == false && IsInClipSpace(clipSpece) == true) {
+            isInSide = true;
+        }
+
+        // calculate AABB in NDC
+        float3 ndc = clipSpece.xyz / clipSpece.w;
+        minNdcX = min(minNdcX, ndc.x);
+        minNdcY = min(minNdcY, ndc.y);
+        minNdcZ = min(minNdcZ, ndc.z);
+        maxNdcX = max(maxNdcX, ndc.x);
+        maxNdcY = max(maxNdcY, ndc.y);
+        maxNdcZ = max(maxNdcZ, ndc.z);
+    }
+
+    if (isInSide == false) {
+        // outside of frustum
+        return;
+    }
+
+    float2 uvLeftBottom = float2(minNdcX, minNdcY) * 0.5 + float2(0.5, 0.5);
+    float2 uvRightTop = float2(maxNdcX, maxNdcY) * 0.5 + float2(0.5, 0.5);
+
+    float depth = maxNdcZ;
+    if (_isOpenGL) {
+        depth = minNdcZ;
+        depth = depth * 0.5 + 0.5; // remap to [0, 1]
+    }
+
+    uint texWidth, texHeight, numLevels;
+    _HiZTexture.GetDimensions(0, texWidth, texHeight, numLevels);
+
+    float boundSize = max((maxNdcX - minNdcX) * texWidth, (maxNdcY - minNdcY) * texHeight);
+    // check 4 point, separate size to half
+    boundSize = boundSize * 0.5;
+
+    uint mips = (uint)clamp(log2(boundSize), 0, numLevels);
+
+    //texWidth /= (1 << mips);
+    //texHeight /= (1 << mips);
+    _HiZTexture.GetDimensions(mips, texWidth, texHeight, numLevels);
+
+    uint2 pixelLeftBottom = uint2(clamp(uvLeftBottom.x * texWidth, 0, texWidth - 1), clamp(uvLeftBottom.y * texHeight, 0, texHeight - 1));
+    uint2 pixelRightTop = uint2(clamp(uvRightTop.x * texWidth, 0, texWidth - 1), clamp(uvRightTop.y * texHeight, 0, texHeight - 1));
+
+    float depthInTexture = _HiZTexture.mips[mips][pixelLeftBottom].r;
+
+    if (pixelLeftBottom.x < pixelRightTop.x && pixelLeftBottom.y < pixelRightTop.y) {
+        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][pixelRightTop].r);
+        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelLeftBottom.x, pixelRightTop.y)].r);
+        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelRightTop.x, pixelLeftBottom.y)].r);
+    }
+    else if (pixelLeftBottom.x < pixelRightTop.x) {
+        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelRightTop.x, pixelLeftBottom.y)].r);
+    }
+    else if (pixelLeftBottom.y < pixelRightTop.y) {
+        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelLeftBottom.x, pixelRightTop.y)].r);
+    }
+
+    if (IsBehide(depth, depthInTexture)) {
+        return;
+    }
+
+    cullingResult.Append(postionBuffer[id]);
+}

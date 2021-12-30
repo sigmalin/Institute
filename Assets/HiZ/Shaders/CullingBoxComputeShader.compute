@@ -14,6 +14,9 @@ float4x4 matrixVP;
 
 bool _isOpenGL;
 
+float2 _RT_Size;
+uint _MaxMipLevel;
+
 Texture2D _HiZTexture;
 
 AppendStructuredBuffer<float3> cullingResult;

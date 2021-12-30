@@ -163,6 +163,7 @@ public class CullingBoxRenderPassFeature : ScriptableRendererFeature
             _cs.SetTexture(kanel, Shader.PropertyToID("_HiZTexture"), hiz);
 
             _cs.SetVector(Shader.PropertyToID("_RT_Size"), texSize);
+            _cs.SetFloat(Shader.PropertyToID("_MaxMipLevel"), 6);
 
             _cs.SetBuffer(kanel, Shader.PropertyToID("postionBuffer"), postionBuffer);
             _cs.SetBuffer(kanel, Shader.PropertyToID("cullingResult"), cullingResultBuffer);

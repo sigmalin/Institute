@@ -149,6 +149,15 @@ public class HizBoxObject : MonoBehaviour, IHizCullingBoxObject
         Bounds bounds = mesh.bounds;
         _max = bounds.max;
         _min = bounds.min;
+        
+        // for sample shader
+        _max.x *= 0.1f;
+        _max.y *= 0.1f;
+        _max.z *= 0.1f;
+        
+        _max.x *= 0.1f;
+        _min.y *= 0.1f;
+        _min.z *= 0.1f;
         return true;
     }
 

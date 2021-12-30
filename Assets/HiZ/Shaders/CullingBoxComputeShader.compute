@@ -82,48 +82,31 @@ void CSCullingBox(uint id : SV_DispatchThreadID)
         return;
     }
 
-    float2 uvLeftBottom = float2(minNdcX, minNdcY) * 0.5 + float2(0.5, 0.5);
-    float2 uvRightTop = float2(maxNdcX, maxNdcY) * 0.5 + float2(0.5, 0.5);
+    float lenNdcX = (maxNdcX - minNdcX) * 0.5; // len of x-axis in ndc space = 2 
+    float lenNdcY = (maxNdcY - minNdcY) * 0.5;
+    float boundSize = max(lenNdcX * _RT_Size.x, lenNdcY * _RT_Size.y);
 
-    float depth = maxNdcZ;
-    if (_isOpenGL) {
-        depth = minNdcZ;
-        depth = depth * 0.5 + 0.5; // remap to [0, 1]
-    }
+    uint mips = (uint)clamp(log2(boundSize * 0.5), 0, _MaxMipLevel);
+    uint texScale = 1 << mips;
 
-    uint texWidth, texHeight, numLevels;
-    _HiZTexture.GetDimensions(0, texWidth, texHeight, numLevels);
-
-    float boundSize = max((maxNdcX - minNdcX) * texWidth, (maxNdcY - minNdcY) * texHeight);
-    // check 4 point, separate size to half
-    boundSize = boundSize * 0.5;
-
-    uint mips = (uint)clamp(log2(boundSize), 0, numLevels);
-
-    //texWidth /= (1 << mips);
-    //texHeight /= (1 << mips);
-    _HiZTexture.GetDimensions(mips, texWidth, texHeight, numLevels);
-
-    uint2 pixelLeftBottom = uint2(clamp(uvLeftBottom.x * texWidth, 0, texWidth - 1), clamp(uvLeftBottom.y * texHeight, 0, texHeight - 1));
-    uint2 pixelRightTop = uint2(clamp(uvRightTop.x * texWidth, 0, texWidth - 1), clamp(uvRightTop.y * texHeight, 0, texHeight - 1));
-
-    float depthInTexture = _HiZTexture.mips[mips][pixelLeftBottom].r;
-
-    if (pixelLeftBottom.x < pixelRightTop.x && pixelLeftBottom.y < pixelRightTop.y) {
-        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][pixelRightTop].r);
-        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelLeftBottom.x, pixelRightTop.y)].r);
-        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelRightTop.x, pixelLeftBottom.y)].r);
-    }
-    else if (pixelLeftBottom.x < pixelRightTop.x) {
-        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelRightTop.x, pixelLeftBottom.y)].r);
-    }
-    else if (pixelLeftBottom.y < pixelRightTop.y) {
-        depthInTexture = GetFarestDepth(depthInTexture, _HiZTexture.mips[mips][uint2(pixelLeftBottom.x, pixelRightTop.y)].r);
-    }
-
+    float2 uv0 = float2(minNdcX, minNdcY) * 0.5 + float2(0.5, 0.5);
+    float2 uv1 = float2(minNdcX, maxNdcY) * 0.5 + float2(0.5, 0.5);
+    float2 uv2 = float2(maxNdcX, minNdcY) * 0.5 + float2(0.5, 0.5);
+    float2 uv3 = float2(maxNdcX, maxNdcY) * 0.5 + float2(0.5, 0.5);
+    
+    uint2 pixel0 = uint2((uv0 * _RT_Size) / texScale);
+    uint2 pixel1 = uint2((uv1 * _RT_Size) / texScale);
+    uint2 pixel2 = uint2((uv2 * _RT_Size) / texScale);
+    uint2 pixel3 = uint2((uv3 * _RT_Size) / texScale);
+    
+    float depthInTexture = GetFarestDepth(
+        GetFarestDepth(_HiZTexture.mips[mips][pixel0].r, _HiZTexture.mips[mips][pixel1].r),
+        GetFarestDepth(_HiZTexture.mips[mips][pixel2].r, _HiZTexture.mips[mips][pixel3].r)
+        );
+    
     if (IsBehide(depth, depthInTexture)) {
         return;
     }
-
+    
     cullingResult.Append(postionBuffer[id]);
 }

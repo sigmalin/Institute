@@ -1,3 +1,4 @@
+//https://roystan.net/articles/grass-shader.html
 Shader "GeometryGrass/GeometryGrassShader"
 {
     Properties

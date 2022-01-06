@@ -1,0 +1,20 @@
+#include "QuadTreeCore.cginc"
+#include "RenderPatch.cginc"
+
+#pragma kernel BuildPatches
+
+StructuredBuffer<uint3> FinalNodeList;
+AppendStructuredBuffer<RenderPatch> CulledPatchList;
+
+[numthreads(PATCH_COUNT_IN_NODE, PATCH_COUNT_IN_NODE, 1)]
+void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
+{
+	uint3 node = FinalNodeList[groupId.x];
+	uint2 patchOffset = groupThreadID.xy;
+
+	RenderPatch patch;
+	patch.position = CalcPatchPos(node.xy, patchOffset, node.z);
+	patch.lod = node.z;
+
+	CulledPatchList.Append(patch);
+}

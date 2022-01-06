@@ -1,0 +1,42 @@
+#include "QuadTreeCore.cginc"
+#include "NodeDescriptor.cginc"
+
+#pragma kernel TraverseQuadTree
+
+uniform uint ConsumeNodeCount;
+uniform uint PassLOD;
+ConsumeStructuredBuffer<uint2> ConsumeNodeList;
+AppendStructuredBuffer<uint2> AppendNodeList;
+AppendStructuredBuffer<uint3> AppendFinalNodeList;
+
+uniform float3 CameraPos;
+
+bool EvaluateNode(uint2 node, uint lod)
+{
+	float3 centerPos = CalcNodeCenterPos(node, lod);
+	float size = GetLodSize(lod);
+	return (length(CameraPos - centerPos) / (size * 1.414f)) < 1.0f;
+}
+
+[numthreads(64,1,1)]
+void TraverseQuadTree (uint id : SV_DispatchThreadID)
+{
+	if (ConsumeNodeCount <= id) return;
+
+	uint2 node = ConsumeNodeList.Consume();
+	if (PassLOD > 0 && EvaluateNode(node, PassLOD))
+	{
+		SetNodeBranch(node, PassLOD, 1);
+
+		AppendNodeList.Append(node * 2);
+		AppendNodeList.Append(node * 2 + uint2(1, 0));
+		AppendNodeList.Append(node * 2 + uint2(0, 1));
+		AppendNodeList.Append(node * 2 + uint2(1, 1));
+	}
+	else
+	{
+		SetNodeBranch(node, PassLOD, 0);
+
+		AppendFinalNodeList.Append(uint3(node, PassLOD));
+	}
+}

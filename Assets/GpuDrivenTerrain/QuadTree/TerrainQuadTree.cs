@@ -8,7 +8,8 @@ public class TerrainQuadTree
     QuadTreeSetting Setting;
 
     QuadTreeTraverser Traverser;
-    QuadTreeBuildPatches Builder;
+    QuadTreeBuildPatches PatchesBuilder;
+    QuadTreeLodMap LodMapBuilder;
 
     GraphicsBuffer RenderPatchesBuffer;
 
@@ -24,8 +25,11 @@ public class TerrainQuadTree
         Traverser = new QuadTreeTraverser(Setting);
         Traverser.Initialize();
 
-        Builder = new QuadTreeBuildPatches(Setting);
-        Builder.Initialize();
+        PatchesBuilder = new QuadTreeBuildPatches(Setting);
+        PatchesBuilder.Initialize();
+
+        LodMapBuilder = new QuadTreeLodMap(Setting);
+        LodMapBuilder.Initialize();
     }
 
     public void Release()
@@ -36,10 +40,16 @@ public class TerrainQuadTree
             Traverser = null;
         }
 
-        if (Builder != null)
+        if (PatchesBuilder != null)
         {
-            Builder.Initialize();
-            Builder = null;
+            PatchesBuilder.Release();
+            PatchesBuilder = null;
+        }
+
+        if (LodMapBuilder != null)
+        {
+            LodMapBuilder.Release();
+            LodMapBuilder = null;
         }
 
         RenderPatchesBuffer = null;
@@ -49,7 +59,8 @@ public class TerrainQuadTree
     {
         return SystemInfo.supportsComputeShaders == true &&
                 Traverser != null &&
-                Builder != null;
+                PatchesBuilder != null &&
+                LodMapBuilder != null;
     }
 
     public void Process(out GraphicsBuffer RenderPatchesBuffer)
@@ -62,6 +73,9 @@ public class TerrainQuadTree
         int size = Traverser.Traverse(out buffer);
         if (size == 0) return;
 
-        Builder.BuildBatch(buffer, size, out RenderPatchesBuffer);
+        RenderTexture LodMap;
+        LodMapBuilder.Build(Traverser.GetNodeDescriptors(), out LodMap);
+
+        PatchesBuilder.BuildBatch(buffer, size, out RenderPatchesBuffer);
     }
 }

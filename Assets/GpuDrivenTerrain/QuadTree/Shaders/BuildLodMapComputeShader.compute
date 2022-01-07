@@ -1,0 +1,30 @@
+#include "NodeDescriptor.cginc"
+
+#pragma kernel BuildLodMap
+
+RWTexture2D<float> LodMap;
+
+uniform uint2 LodMapSize;
+
+uniform uint MaxLOD;
+
+[numthreads(8,8,1)]
+void BuildLodMap(uint3 id : SV_DispatchThreadID)
+{
+	uint2 sector = id.xy;
+	if (LodMapSize.x <= sector.x || LodMapSize.y <= sector.y) {
+		return;
+	}
+
+	for (int lod = MaxLOD; 0 <= lod; --lod)
+	{
+		uint2 nodeInLod = (sector >> lod);
+		uint branch = GetNodeBranch(nodeInLod, lod);
+		if (branch == 0) {
+			LodMap[sector] = ((float)lod) / MaxLOD;
+			return;
+		}
+	}
+
+	LodMap[sector] = 0;
+}

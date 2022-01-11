@@ -39,4 +39,10 @@ void SetNodeBranch(uint2 node, uint lod, uint branch)
 	NodeDescriptors[id].branch = branch;
 }
 
+int GetNodeBranch(uint2 node, uint lod)
+{
+	uint id = GetNodeID(node, lod);
+	return NodeDescriptors[id].branch;
+}
+
 #endif

@@ -19,7 +19,7 @@ void BuildLodMap(uint3 id : SV_DispatchThreadID)
 	for (int lod = MaxLOD; 0 <= lod; --lod)
 	{
 		uint2 nodeInLod = (sector >> lod);
-		uint branch = GetNodeBranch(nodeInLod, lod);
+		uint branch = GetNodeBranch(nodeInLod, lod, MaxLOD);
 		if (branch == 0) {
 			LodMap[sector] = ((float)lod) / MaxLOD;
 			return;

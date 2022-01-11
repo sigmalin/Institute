@@ -8,7 +8,7 @@ public class QuadTreeBuildPatches
     int kernelBuildPatches;
 
     int FinalNodeListShaderID;
-    int CulledPatchListShaderID;
+    int RenderPatchListShaderID;
 
     int LengthOfLod0ShaderID;
     int MaxLODShaderID;
@@ -29,7 +29,7 @@ public class QuadTreeBuildPatches
             kernelBuildPatches = Setting.BuildPatchesCS.FindKernel("BuildPatches");
 
             FinalNodeListShaderID = Shader.PropertyToID("FinalNodeList");
-            CulledPatchListShaderID = Shader.PropertyToID("RenderPatchList");
+            RenderPatchListShaderID = Shader.PropertyToID("RenderPatchList");
 
             LengthOfLod0ShaderID = Shader.PropertyToID("LengthOfLod0");
             MaxLODShaderID = Shader.PropertyToID("MaxLOD");
@@ -82,7 +82,7 @@ public class QuadTreeBuildPatches
         RenderPatchBuffer.SetCounterValue(0);
 
         Setting.BuildPatchesCS.SetBuffer(kernelBuildPatches, FinalNodeListShaderID, srcBuffer);
-        Setting.BuildPatchesCS.SetBuffer(kernelBuildPatches, CulledPatchListShaderID, RenderPatchBuffer);
+        Setting.BuildPatchesCS.SetBuffer(kernelBuildPatches, RenderPatchListShaderID, RenderPatchBuffer);
 
         Setting.BuildPatchesCS.SetTexture(kernelBuildPatches, LodMapShaderID, rtLodMap);
 

@@ -1,4 +1,4 @@
-Shader "GpuDrivenTerrain/GpuDrivenTerrainShader"
+Shader "GpuDriven/GpuDrivenTerrainShader"
 {
     Properties
     {
@@ -20,6 +20,8 @@ Shader "GpuDrivenTerrain/GpuDrivenTerrainShader"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
             #include "RenderPatch.cginc"
+
+            float offsetLOD;
 
             #if SHADER_TARGET >= 45
             StructuredBuffer<RenderPatch> CulledPatchList;
@@ -46,7 +48,26 @@ Shader "GpuDrivenTerrain/GpuDrivenTerrainShader"
                 RenderPatch data = 0;
 #endif
 
+                float2 offset = float2(0,0);
+                if ((data.neighbor & 0x01) != 0)
+                {
+                    offset.x -= v.color.r;
+                }
+                if ((data.neighbor & 0x02) != 0)
+                {
+                    offset.y -= v.color.g;
+                }
+                if ((data.neighbor & 0x04) != 0)
+                {
+                    offset.y -= v.color.b;
+                }
+                if ((data.neighbor & 0x08) != 0)
+                {
+                    offset.x -= v.color.a;
+                }
+
                 float3 position = v.vertex.xyz;
+                position.xz += offset * offsetLOD;
                 position.xz *= (1 << data.lod);
                 position.xz += data.position;
 
@@ -82,6 +103,8 @@ Shader "GpuDrivenTerrain/GpuDrivenTerrainShader"
 
             #include "RenderPatch.cginc"
 
+            float offsetLOD;
+
             #if SHADER_TARGET >= 45
             StructuredBuffer<RenderPatch> CulledPatchList;
             #endif
@@ -89,6 +112,7 @@ Shader "GpuDrivenTerrain/GpuDrivenTerrainShader"
             struct appdata
             {
                 float4 vertex : POSITION;
+                half4 color : COLOR;
             };
 
             struct v2g
@@ -111,7 +135,26 @@ Shader "GpuDrivenTerrain/GpuDrivenTerrainShader"
                 RenderPatch data = 0;
 #endif
 
+                float2 offset = float2(0, 0);
+                if ((data.neighbor & 0x01) != 0)
+                {
+                    offset.x -= v.color.r;
+                }
+                if ((data.neighbor & 0x02) != 0)
+                {
+                    offset.y -= v.color.g;
+                }
+                if ((data.neighbor & 0x04) != 0)
+                {
+                    offset.y -= v.color.b;
+                }
+                if ((data.neighbor & 0x08) != 0)
+                {
+                    offset.x -= v.color.a;
+                }
+
                 float3 position = v.vertex.xyz;
+                position.xz += offset * offsetLOD;
                 position.xz *= (1 << data.lod);
                 position.xz += data.position;
 

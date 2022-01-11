@@ -7,6 +7,7 @@ public class QuadTreeSetting
 {
     public ComputeShader TraverserCS;
     public ComputeShader BuildPatchesCS;
+    public ComputeShader BuildLodMapCS;
 
     public Material matTerrain;
 

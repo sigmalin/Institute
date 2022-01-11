@@ -76,6 +76,6 @@ public class TerrainQuadTree
         RenderTexture LodMap;
         LodMapBuilder.Build(Traverser.GetNodeDescriptors(), out LodMap);
 
-        PatchesBuilder.BuildBatch(buffer, size, out RenderPatchesBuffer);
+        PatchesBuilder.BuildBatch(buffer, size, LodMap, out RenderPatchesBuffer);
     }
 }

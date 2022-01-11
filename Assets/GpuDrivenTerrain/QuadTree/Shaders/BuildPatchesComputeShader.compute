@@ -4,7 +4,7 @@
 #pragma kernel BuildPatches
 
 StructuredBuffer<uint3> FinalNodeList;
-AppendStructuredBuffer<RenderPatch> CulledPatchList;
+AppendStructuredBuffer<RenderPatch> RenderPatchList;
 
 Texture2D<float> LodMap;
 
@@ -88,5 +88,5 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, ui
 		}
 	}
 
-	CulledPatchList.Append(patch);
+	RenderPatchList.Append(patch);
 }

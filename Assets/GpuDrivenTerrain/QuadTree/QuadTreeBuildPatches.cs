@@ -64,7 +64,7 @@ public class QuadTreeBuildPatches
 
         int maxPatchCount = Setting.MaxPatchCount;
 
-        CulledPatchBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append, maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint) + sizeof(float));
+        CulledPatchBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append, maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint));
     }
 
     void ReleaseGraphicsBuffer()

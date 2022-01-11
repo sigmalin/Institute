@@ -222,4 +222,9 @@ public class QuadTreeTraverser
 
         return GetBufferCount(buffer);
     }
+
+    public GraphicsBuffer GetNodeDescriptors()
+    {
+        return NodeDescriptorBuffer;
+    }
 }

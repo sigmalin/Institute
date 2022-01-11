@@ -6,6 +6,41 @@
 StructuredBuffer<uint3> FinalNodeList;
 AppendStructuredBuffer<RenderPatch> CulledPatchList;
 
+Texture2D<float> LodMap;
+
+uint NodeSizeAtMaxLOD;
+
+bool isUpSide(uint2 offset)
+{
+	return offset.y == (PATCH_COUNT_IN_NODE - 1);
+}
+
+bool isDownSide(uint2 offset)
+{
+	return offset.y == 0;
+}
+
+bool isRightSide(uint2 offset)
+{
+	return offset.x == (PATCH_COUNT_IN_NODE - 1);
+}
+
+bool isLeftSide(uint2 offset)
+{
+	return offset.x == 0;
+}
+
+int2 NodeAtLod0(uint3 node)
+{
+	return node.xy << (node.z);
+}
+
+float GetLodValue(int2 nodeAtLod0, int2 offset)
+{
+	uint nodeCount = (NodeSizeAtMaxLOD << MaxLOD);
+	return LodMap.mips[0][clamp(nodeAtLod0 + offset,0, nodeCount - 1)];
+}
+
 [numthreads(PATCH_COUNT_IN_NODE, PATCH_COUNT_IN_NODE, 1)]
 void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, uint3 groupThreadID : SV_GroupThreadID)
 {
@@ -15,6 +50,43 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, ui
 	RenderPatch patch;
 	patch.position = CalcPatchPos(node.xy, patchOffset, node.z);
 	patch.lod = node.z;
+	patch.neighbor = 0;
+
+	float valueLod = ((float)node.z) / MaxLOD;
+	int2 nodeAtLod0 = NodeAtLod0(node);
+	int diff = 1 << node.z;
+		
+	if (isUpSide(patchOffset) == true)
+	{
+		if (valueLod < GetLodValue(nodeAtLod0, int2(0, diff)))
+		{
+			patch.neighbor |= 1;
+		}
+	}
+
+	if (isRightSide(patchOffset) == true)
+	{
+		if (valueLod < GetLodValue(nodeAtLod0, int2(diff, 0)))
+		{
+			patch.neighbor |= 2;
+		}
+	}
+
+	if (isLeftSide(patchOffset) == true)
+	{
+		if (valueLod < GetLodValue(nodeAtLod0, int2(-1, 0)))
+		{
+			patch.neighbor |= 4;
+		}
+	}
+	
+	if (isDownSide(patchOffset) == true)
+	{
+		if (valueLod < GetLodValue(nodeAtLod0, int2(0, -1)))
+		{
+			patch.neighbor |= 8;
+		}
+	}
 
 	CulledPatchList.Append(patch);
 }

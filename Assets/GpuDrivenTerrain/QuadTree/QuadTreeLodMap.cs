@@ -76,6 +76,8 @@ public class QuadTreeLodMap
 
     void BuildLodMap (GraphicsBuffer descBuffer)
     {
+        if (isValid() == false) return;
+
         Setting.BuildLodMapCS.SetBuffer(kernelBuildLodMap, NodeDescriptorsShaderID, descBuffer);
         Setting.BuildLodMapCS.SetTexture(kernelBuildLodMap, LodMapShaderID, rtLodMap);
 

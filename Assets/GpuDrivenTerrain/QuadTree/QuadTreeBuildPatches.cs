@@ -16,7 +16,7 @@ public class QuadTreeBuildPatches
     int LodMapShaderID;
     int NodeSizeAtMaxLodID;
 
-    GraphicsBuffer CulledPatchBuffer;
+    GraphicsBuffer RenderPatchBuffer;
 
     QuadTreeSetting Setting;
 
@@ -29,7 +29,7 @@ public class QuadTreeBuildPatches
             kernelBuildPatches = Setting.BuildPatchesCS.FindKernel("BuildPatches");
 
             FinalNodeListShaderID = Shader.PropertyToID("FinalNodeList");
-            CulledPatchListShaderID = Shader.PropertyToID("CulledPatchList");
+            CulledPatchListShaderID = Shader.PropertyToID("RenderPatchList");
 
             LengthOfLod0ShaderID = Shader.PropertyToID("LengthOfLod0");
             MaxLODShaderID = Shader.PropertyToID("MaxLOD");
@@ -55,7 +55,7 @@ public class QuadTreeBuildPatches
     bool isValid()
     {
         return Setting != null && Setting.BuildPatchesCS != null &&
-                CulledPatchBuffer != null;
+                RenderPatchBuffer != null;
     }
 
     void InitGraphicsBuffer()
@@ -64,25 +64,25 @@ public class QuadTreeBuildPatches
 
         int maxPatchCount = Setting.MaxPatchCount;
 
-        CulledPatchBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append, maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint));
+        RenderPatchBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append, maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint));
     }
 
     void ReleaseGraphicsBuffer()
     {
-        if (CulledPatchBuffer != null)
+        if (RenderPatchBuffer != null)
         {
-            CulledPatchBuffer.Release();
-            CulledPatchBuffer.Dispose();
-            CulledPatchBuffer = null;
+            RenderPatchBuffer.Release();
+            RenderPatchBuffer.Dispose();
+            RenderPatchBuffer = null;
         }
     }
 
     void BuildRenderBatches(GraphicsBuffer srcBuffer, int srcSize, RenderTexture rtLodMap)
     {
-        CulledPatchBuffer.SetCounterValue(0);
+        RenderPatchBuffer.SetCounterValue(0);
 
         Setting.BuildPatchesCS.SetBuffer(kernelBuildPatches, FinalNodeListShaderID, srcBuffer);
-        Setting.BuildPatchesCS.SetBuffer(kernelBuildPatches, CulledPatchListShaderID, CulledPatchBuffer);
+        Setting.BuildPatchesCS.SetBuffer(kernelBuildPatches, CulledPatchListShaderID, RenderPatchBuffer);
 
         Setting.BuildPatchesCS.SetTexture(kernelBuildPatches, LodMapShaderID, rtLodMap);
 
@@ -104,7 +104,7 @@ public class QuadTreeBuildPatches
 
         BuildRenderBatches(srcBuffer, srcSize, rtLodMap);
 
-        buffer = CulledPatchBuffer;
+        buffer = RenderPatchBuffer;
 
         return true;
     }

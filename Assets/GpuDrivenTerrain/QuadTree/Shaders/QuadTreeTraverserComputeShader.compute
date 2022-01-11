@@ -24,18 +24,19 @@ void TraverseQuadTree (uint id : SV_DispatchThreadID)
 	if (ConsumeNodeCount <= id) return;
 
 	uint2 node = ConsumeNodeList.Consume();
+	uint2 child = node << 1;
 	if (PassLOD > 0 && EvaluateNode(node, PassLOD))
 	{
-		SetNodeBranch(node, PassLOD, 1);
+		SetNodeBranch(node, PassLOD, MaxLOD, 1);
 
-		AppendNodeList.Append(node * 2);
-		AppendNodeList.Append(node * 2 + uint2(1, 0));
-		AppendNodeList.Append(node * 2 + uint2(0, 1));
-		AppendNodeList.Append(node * 2 + uint2(1, 1));
+		AppendNodeList.Append(child);
+		AppendNodeList.Append(child + uint2(1, 0));
+		AppendNodeList.Append(child + uint2(0, 1));
+		AppendNodeList.Append(child + uint2(1, 1));
 	}
 	else
 	{
-		SetNodeBranch(node, PassLOD, 0);
+		SetNodeBranch(node, PassLOD, MaxLOD, 0);
 
 		AppendFinalNodeList.Append(uint3(node, PassLOD));
 	}

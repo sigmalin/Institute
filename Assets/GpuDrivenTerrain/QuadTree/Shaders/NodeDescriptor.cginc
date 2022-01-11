@@ -10,38 +10,38 @@ RWStructuredBuffer<NodeDescriptor> NodeDescriptors;
 
 uint NodeSizeAtMaxLOD;
 
-uint GetNodeCount(uint lod)
+uint GetNodeCount(uint curLOD, uint maxLOD)
 {
-	return NodeSizeAtMaxLOD << (lod);
+	return NodeSizeAtMaxLOD << (maxLOD - curLOD);
 }
 
-uint GetNodeIdOffset(uint lod)
+uint GetNodeIdOffset(uint curLOD, uint maxLOD)
 {
 	uint offset = 0;
 
-	for (uint i = 0; i < lod; ++i)
+	for (uint i = maxLOD; curLOD < i; --i)
 	{
-		uint count = GetNodeCount(i);
+		uint count = GetNodeCount(i, maxLOD);
 		offset += count * count;
 	}
 
 	return offset;
 }
 
-uint GetNodeID(uint2 node, uint lod)
+uint GetNodeID(uint2 node, uint curLOD, uint maxLOD)
 {
-	return GetNodeIdOffset(lod) + node.y * GetNodeCount(lod) + node.x;
+	return GetNodeIdOffset(curLOD, maxLOD) + node.y * GetNodeCount(curLOD, maxLOD) + node.x;
 }
 
-void SetNodeBranch(uint2 node, uint lod, uint branch)
+void SetNodeBranch(uint2 node, uint curLOD, uint maxLOD, uint branch)
 {
-	uint id = GetNodeID(node, lod);
+	uint id = GetNodeID(node, curLOD, maxLOD);
 	NodeDescriptors[id].branch = branch;
 }
 
-int GetNodeBranch(uint2 node, uint lod)
+int GetNodeBranch(uint2 node, uint curLOD, uint maxLOD)
 {
-	uint id = GetNodeID(node, lod);
+	uint id = GetNodeID(node, curLOD, maxLOD);
 	return NodeDescriptors[id].branch;
 }
 

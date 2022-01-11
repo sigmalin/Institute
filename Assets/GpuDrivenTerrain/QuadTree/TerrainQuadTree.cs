@@ -11,8 +11,6 @@ public class TerrainQuadTree
     QuadTreeBuildPatches PatchesBuilder;
     QuadTreeLodMap LodMapBuilder;
 
-    GraphicsBuffer RenderPatchesBuffer;
-
     public TerrainQuadTree(QuadTreeSetting setting)
     {
         Setting = setting;
@@ -51,8 +49,6 @@ public class TerrainQuadTree
             LodMapBuilder.Release();
             LodMapBuilder = null;
         }
-
-        RenderPatchesBuffer = null;
     }
 
     bool isValid()

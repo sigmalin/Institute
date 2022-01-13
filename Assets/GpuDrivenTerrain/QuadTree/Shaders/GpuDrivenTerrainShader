@@ -31,6 +31,7 @@ Shader "GpuDriven/GpuDrivenTerrainShader"
             {
                 float4 vertex : POSITION;
                 half4 color : COLOR;
+                uint uv : TEXCOORD0;
             };
 
             struct v2f
@@ -47,24 +48,17 @@ Shader "GpuDriven/GpuDrivenTerrainShader"
 #else
                 RenderPatch data = 0;
 #endif
+                uint row = (v.uv & 0xffff) + (data.coordinate & 0xffff);
+                uint col = ((v.uv >> 16) & 0xffff) + ((data.coordinate >> 16) & 0xffff);
 
-                float2 offset = float2(0,0);
-                if ((data.neighbor & 0x01) != 0)
-                {
-                    offset.x -= v.color.r;
-                }
-                if ((data.neighbor & 0x02) != 0)
-                {
-                    offset.y -= v.color.g;
-                }
-                if ((data.neighbor & 0x04) != 0)
-                {
-                    offset.y -= v.color.b;
-                }
-                if ((data.neighbor & 0x08) != 0)
-                {
-                    offset.x -= v.color.a;
-                }
+                uint2 coordinate = uint2(row, col);
+                uint4 neighbor = uint4(data.neighbor, (data.neighbor >> 8), (data.neighbor >> 16), (data.neighbor >> 24)) & 0xff;
+                neighbor = uint4(1 << neighbor.r, 1 << neighbor.g, 1 << neighbor.b, 1 << neighbor.a);
+                neighbor = neighbor.rgba - 1;
+
+                float2 offset = float2(0, 0);
+                offset -= v.color.rg * (coordinate & neighbor.rg);
+                offset -= v.color.ab * (coordinate & neighbor.ab);
 
                 float3 position = v.vertex.xyz;
                 position.xz += offset * offsetLOD;
@@ -113,6 +107,7 @@ Shader "GpuDriven/GpuDrivenTerrainShader"
             {
                 float4 vertex : POSITION;
                 half4 color : COLOR;
+                uint uv : TEXCOORD0;
             };
 
             struct v2g
@@ -134,24 +129,17 @@ Shader "GpuDriven/GpuDrivenTerrainShader"
 #else
                 RenderPatch data = 0;
 #endif
+                uint row = (v.uv & 0xffff) + (data.coordinate & 0xffff);
+                uint col = ((v.uv >> 16) & 0xffff) + ((data.coordinate >> 16) & 0xffff);
+
+                uint2 coordinate = uint2(row, col);
+                uint4 neighbor = uint4(data.neighbor, (data.neighbor >> 8), (data.neighbor >> 16), (data.neighbor >> 24)) & 0xff;                
+                neighbor = uint4(1 << neighbor.r, 1 << neighbor.g, 1 << neighbor.b, 1 << neighbor.a);
+                neighbor = neighbor.rgba - 1;
 
                 float2 offset = float2(0, 0);
-                if ((data.neighbor & 0x01) != 0)
-                {
-                    offset.x -= v.color.r;
-                }
-                if ((data.neighbor & 0x02) != 0)
-                {
-                    offset.y -= v.color.g;
-                }
-                if ((data.neighbor & 0x04) != 0)
-                {
-                    offset.y -= v.color.b;
-                }
-                if ((data.neighbor & 0x08) != 0)
-                {
-                    offset.x -= v.color.a;
-                }
+                offset -= v.color.rg * (coordinate & neighbor.rg);
+                offset -= v.color.ab * (coordinate & neighbor.ab);
 
                 float3 position = v.vertex.xyz;
                 position.xz += offset * offsetLOD;

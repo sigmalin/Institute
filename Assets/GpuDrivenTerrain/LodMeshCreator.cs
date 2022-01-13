@@ -8,12 +8,14 @@ public class LodMeshCreator
     struct LodVertex
     {
         public Vector3 pos;
-        public Color32 col;
+        public Color32 colour;
+        public uint uv;
 
-        public LodVertex(Vector3 _pos, Color32 _col)
+        public LodVertex(Vector3 _pos, Color32 _colour, uint _uv)
         {
             pos = _pos;
-            col = _col;
+            colour = _colour;
+            uv = _uv;
         }
     }
 
@@ -85,19 +87,21 @@ public class LodMeshCreator
 
         int index = 0;
 
-        for (ushort z = 0; z <= step; ++z)
+        for (uint z = 0; z <= step; ++z)
         {
             float zPos = gap * z;
-            for (ushort x = 0; x <= step; ++x)
+            for (uint x = 0; x <= step; ++x)
             {
                 vertices[index].pos.x = gap * x;
                 vertices[index].pos.y = 0f;
                 vertices[index].pos.z = zPos;
 
-                vertices[index].col.r = 0;
-                vertices[index].col.g = 0;
-                vertices[index].col.b = 0;
-                vertices[index].col.a = 0;
+                vertices[index].colour.r = 0;
+                vertices[index].colour.g = 0;
+                vertices[index].colour.b = 0;
+                vertices[index].colour.a = 0;
+
+                vertices[index].uv = ((z & 0xffff) << 16) | (x & 0xffff);
 
                 ++index;
             }
@@ -105,27 +109,27 @@ public class LodMeshCreator
 
         // rgba => news
         index = step * (step + 1);
-        for (ushort i = 1; i < step; i += 2)
+        for (ushort i = 0; i < step; ++i)
         {
-            vertices[index + i].col.r = 255;
+            vertices[index + i].colour.r = 255;
         }
 
         index = step;
-        for (ushort i = 1; i < step; i += 2)
+        for (ushort i = 0; i < step; ++i)
         {
-            vertices[index + i * (step + 1)].col.g = 255;
+            vertices[index + i * (step + 1)].colour.g = 255;
         }
 
         index = 0;
-        for (ushort i = 1; i < step; i += 2)
+        for (ushort i = 0; i < step; ++i)
         {
-            vertices[index + i * (step + 1)].col.b = 255;
+            vertices[index + i * (step + 1)].colour.b = 255;
         }
 
         index = 0;
-        for (ushort i = 1; i < step; i += 2)
+        for (ushort i = 0; i < step; ++i)
         {
-            vertices[index + i].col.a = 255;
+            vertices[index + i].colour.a = 255;
         }
 
         ///
@@ -181,7 +185,8 @@ public class LodMeshCreator
         VertexAttributeDescriptor[] layouts = new VertexAttributeDescriptor[]
         {
             new VertexAttributeDescriptor(VertexAttribute.Position, VertexAttributeFormat.Float32, 3),
-            new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4)
+            new VertexAttributeDescriptor(VertexAttribute.Color, VertexAttributeFormat.UNorm8, 4),
+            new VertexAttributeDescriptor(VertexAttribute.TexCoord0, VertexAttributeFormat.UInt32, 1)
         };
 
         mesh.SetVertexBufferParams(vertices.Length, layouts);

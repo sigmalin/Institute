@@ -20,7 +20,7 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenUnit
     // Start is called before the first frame update
     void Start()
     {
-        LodMeshCreator.Generate(4, Setting.LodMeshRadius, out meshTerrain, out argBuffer);
+        LodMeshCreator.Generate(Setting.LodMeshStep, Setting.LodMeshRadius, out meshTerrain, out argBuffer);
 
         quadTree = new TerrainQuadTree(Setting);
         quadTree.Initialize();
@@ -79,6 +79,11 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenUnit
         {
             GpuDrivenRenderPassFeature.Instance.Register(this);
         }
+    }
+
+    void onCulling()
+    {
+
     }
 
     public bool onRender(CommandBuffer _cmd)

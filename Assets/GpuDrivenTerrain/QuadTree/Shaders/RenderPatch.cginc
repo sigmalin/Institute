@@ -6,6 +6,7 @@ struct RenderPatch
 	float2 position;
 	uint lod;
 	uint neighbor;
+	uint coordinate;
 };
 
 #endif

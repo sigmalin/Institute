@@ -15,6 +15,7 @@ public class QuadTreeBuildPatches
 
     int LodMapShaderID;
     int NodeSizeAtMaxLodID;
+    int LodMeshStepID;
 
     GraphicsBuffer RenderPatchBuffer;
 
@@ -36,6 +37,7 @@ public class QuadTreeBuildPatches
 
             LodMapShaderID = Shader.PropertyToID("LodMap");
             NodeSizeAtMaxLodID = Shader.PropertyToID("NodeSizeAtMaxLOD");
+            LodMeshStepID = Shader.PropertyToID("LodMeshStep");
         }
     }
 
@@ -64,7 +66,7 @@ public class QuadTreeBuildPatches
 
         int maxPatchCount = Setting.MaxPatchCount;
 
-        RenderPatchBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append, maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint));
+        RenderPatchBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append, maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint) + sizeof(uint));
     }
 
     void ReleaseGraphicsBuffer()
@@ -90,6 +92,7 @@ public class QuadTreeBuildPatches
         Setting.BuildPatchesCS.SetInt(MaxLODShaderID, Setting.MaxLOD);
 
         Setting.BuildPatchesCS.SetInt(NodeSizeAtMaxLodID, Setting.NodeSizeAtMaxLOD);
+        Setting.BuildPatchesCS.SetInt(LodMeshStepID, Setting.LodMeshStep);
 
         Setting.BuildPatchesCS.Dispatch(kernelBuildPatches, srcSize, 1, 1);
     }

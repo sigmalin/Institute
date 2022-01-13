@@ -10,6 +10,8 @@ Texture2D<float> LodMap;
 
 uint NodeSizeAtMaxLOD;
 
+uint LodMeshStep;
+
 bool isUpSide(uint2 offset)
 {
 	return offset.y == (PATCH_COUNT_IN_NODE - 1);
@@ -51,40 +53,46 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, ui
 	patch.position = CalcPatchPos(node.xy, patchOffset, node.z);
 	patch.lod = node.z;
 	patch.neighbor = 0;
+	patch.coordinate = (((patchOffset.y * LodMeshStep) & 0xffff) << 16) | ((patchOffset.x * LodMeshStep) & 0xffff);
 
 	float valueLod = ((float)node.z) / MaxLOD;
+	float neighborLod = 0;
 	int2 nodeAtLod0 = NodeAtLod0(node);
 	int diff = 1 << node.z;
 		
 	if (isUpSide(patchOffset) == true)
 	{
-		if (valueLod < GetLodValue(nodeAtLod0, int2(0, diff)))
+		neighborLod = GetLodValue(nodeAtLod0, int2(0, diff));
+		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= 1;
+			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff);
 		}
 	}
 
 	if (isRightSide(patchOffset) == true)
 	{
-		if (valueLod < GetLodValue(nodeAtLod0, int2(diff, 0)))
+		neighborLod = GetLodValue(nodeAtLod0, int2(diff, 0));
+		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= 2;
+			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff) << 8;
 		}
 	}
 
 	if (isLeftSide(patchOffset) == true)
 	{
-		if (valueLod < GetLodValue(nodeAtLod0, int2(-1, 0)))
+		neighborLod = GetLodValue(nodeAtLod0, int2(-1, 0));
+		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= 4;
+			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff) << 16;
 		}
 	}
 	
 	if (isDownSide(patchOffset) == true)
 	{
-		if (valueLod < GetLodValue(nodeAtLod0, int2(0, -1)))
+		neighborLod = GetLodValue(nodeAtLod0, int2(0, -1));
+		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= 8;
+			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff) << 24;
 		}
 	}
 

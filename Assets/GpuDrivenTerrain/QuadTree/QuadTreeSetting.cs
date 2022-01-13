@@ -8,6 +8,7 @@ public class QuadTreeSetting
     public ComputeShader TraverserCS;
     public ComputeShader BuildPatchesCS;
     public ComputeShader BuildLodMapCS;
+    public ComputeShader CullingPatchesCS;
 
     public Material matTerrain;
 
@@ -19,6 +20,9 @@ public class QuadTreeSetting
 
     [HideInInspector]
     public readonly int PatchCountInNode = 8;
+
+    [HideInInspector]
+    public readonly ushort LodMeshStep = 4;
 
     [Range(1, 8)]
     public int LodMeshRadius = 4;

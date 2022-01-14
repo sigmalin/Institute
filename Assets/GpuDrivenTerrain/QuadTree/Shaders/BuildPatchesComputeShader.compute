@@ -65,7 +65,8 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, ui
 		neighborLod = GetLodValue(nodeAtLod0, int2(0, diff));
 		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff);
+			uint diff = max(1, floor((neighborLod - valueLod) * MaxLOD));
+			patch.neighbor |= (diff & 0xff);
 		}
 	}
 
@@ -74,7 +75,8 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, ui
 		neighborLod = GetLodValue(nodeAtLod0, int2(diff, 0));
 		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff) << 8;
+			uint diff = max(1, floor((neighborLod - valueLod) * MaxLOD));
+			patch.neighbor |= (diff & 0xff) << 8;
 		}
 	}
 
@@ -83,7 +85,8 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, ui
 		neighborLod = GetLodValue(nodeAtLod0, int2(-1, 0));
 		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff) << 16;
+			uint diff = max(1, floor((neighborLod - valueLod) * MaxLOD));
+			patch.neighbor |= (diff & 0xff) << 16;
 		}
 	}
 	
@@ -92,7 +95,8 @@ void BuildPatches(uint3 id : SV_DispatchThreadID, uint3 groupId : SV_GroupID, ui
 		neighborLod = GetLodValue(nodeAtLod0, int2(0, -1));
 		if (valueLod < neighborLod)
 		{
-			patch.neighbor |= (uint((neighborLod - valueLod) * MaxLOD) & 0xff) << 24;
+			uint diff = max(1, floor((neighborLod - valueLod) * MaxLOD));
+			patch.neighbor |= (diff & 0xff) << 24;
 		}
 	}
 

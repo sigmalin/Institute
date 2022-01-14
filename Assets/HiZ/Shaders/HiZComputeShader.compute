@@ -2,37 +2,47 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
 #pragma kernel CSDownSample
+#pragma kernel CSCopyTexture
 
-float4 _RT_Size;
+uint2 _RT_Size;
+
+uint _mipLevel;
 
 Texture2D _HiZTexture;
 RWTexture2D<float> _mipDepthTexture;
 
-SamplerState pointClampSampler;
-
-
 [numthreads(8, 8, 1)]
 void CSDownSample(uint3 id : SV_DispatchThreadID)
 {
-    if (_RT_Size.x <= (float)id.x || _RT_Size.y <= (float)id.y) return;
+    if (_RT_Size.x <= id.x || _RT_Size.y <= id.y) return;
 
-    float2 screenUV = id.xy * _RT_Size.zw;
+    uint2 uv0 = id.xy << 1;
+    uint2 uv1 = uv0 + uint2(1, 0);
+    uint2 uv2 = uv0 + uint2(0, 1);
+    uint2 uv3 = uv0 + uint2(1, 1);
 
     float4 depth;
 
-    float2 uv0 = screenUV + float2(-0.25, -0.25) * _RT_Size.zw;
-    float2 uv1 = screenUV + float2(-0.25,  0.25) * _RT_Size.zw;
-    float2 uv2 = screenUV + float2( 0.25, -0.25) * _RT_Size.zw;
-    float2 uv3 = screenUV + float2( 0.25,  0.25) * _RT_Size.zw;
-
-    depth.x = _HiZTexture.SampleLevel(pointClampSampler, uv0, 0).r;
-    depth.y = _HiZTexture.SampleLevel(pointClampSampler, uv1, 0).r;
-    depth.z = _HiZTexture.SampleLevel(pointClampSampler, uv2, 0).r;
-    depth.w = _HiZTexture.SampleLevel(pointClampSampler, uv3, 0).r;
+    depth.x = _HiZTexture.mips[_mipLevel][uv0].r;
+    depth.y = _HiZTexture.mips[_mipLevel][uv1].r;
+    depth.z = _HiZTexture.mips[_mipLevel][uv2].r;
+    depth.w = _HiZTexture.mips[_mipLevel][uv3].r;
 
 #if defined(UNITY_REVERSED_Z)
     _mipDepthTexture[id.xy] = min(min(depth.x, depth.y), min(depth.z, depth.w));
 #else
     _mipDepthTexture[id.xy] = max(max(depth.x, depth.y), max(depth.z, depth.w));
 #endif
+}
+
+
+Texture2D _SrcTexture;
+RWTexture2D<float> _DestTexture;
+
+[numthreads(8, 8, 1)]
+void CSCopyTexture(uint3 id : SV_DispatchThreadID)
+{
+    if (_RT_Size.x <= id.x || _RT_Size.y <= id.y) return;
+
+    _DestTexture[id.xy] = _SrcTexture.mips[0][id.xy].r;
 }

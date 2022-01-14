@@ -10,17 +10,23 @@ public class HiZRenderPassFeature : ScriptableRendererFeature
 
         protected RenderTargetHandle cameraDepthHandle;
         protected RenderTargetHandle HiZHandle;
+        protected RenderTargetHandle mipDepthHandle;
 
-        RenderTextureDescriptor descriptor;
+        RenderTextureDescriptor descHiZ;
+        RenderTextureDescriptor descDepth;
 
         protected Setting passSetting;
+        protected int maxMipLevel;
 
         public HiZRenderPass(Setting setting)
         {
             cameraDepthHandle.Init("_CameraDepthTexture");
             HiZHandle.Init("_HiZTexture");
+            mipDepthHandle.Init("_mipDepthHandle");
 
             passSetting = setting;
+
+            maxMipLevel = 0;
         }
 
         // This method is called before executing the render pass.
@@ -47,15 +53,23 @@ public class HiZRenderPassFeature : ScriptableRendererFeature
                 try
                 {
                     cmd.Blit(cameraDepthHandle.Identifier(), HiZHandle.Identifier());
+                                        
+                    int width = descHiZ.width;
+                    int height = descHiZ.height;
 
-                    int level = 0;
-                    int width = descriptor.width;
-                    int height = descriptor.height;
-                    while (8 < width && 8 < height)
+                    maxMipLevel = 0;
+
+                    while (8 < width && 8 < height && maxMipLevel < passSetting.MaxMipCount)
                     {
-                        CopyMipLevel(cmd, passSetting.computeShader, level);
+                        CreateMipDepthTexture(cmd, passSetting.computeShader, maxMipLevel + 1);
 
-                        level += 1;
+                        CopyMipLevel(cmd, passSetting.computeShader, maxMipLevel);
+
+                        CopyTexture(cmd, passSetting.computeShader, maxMipLevel + 1);
+
+                        ReleaseMipDepthTexture(cmd);
+
+                        maxMipLevel += 1;
                         width >>= 1;
                         height >>= 1;
                     }
@@ -79,19 +93,37 @@ public class HiZRenderPassFeature : ScriptableRendererFeature
 
         public override void Configure(CommandBuffer cmd, RenderTextureDescriptor cameraTextureDescriptor)
         {
-            descriptor = cameraTextureDescriptor;
-            descriptor.depthBufferBits = 0;
-            descriptor.colorFormat = RenderTextureFormat.RHalf;
-            descriptor.autoGenerateMips = false;
-            descriptor.useMipMap = true;
-            descriptor.msaaSamples = 1;
-            descriptor.enableRandomWrite = true;
-            cmd.GetTemporaryRT(HiZHandle.id, descriptor, FilterMode.Point);
+            descHiZ = cameraTextureDescriptor;
+            descHiZ.depthBufferBits = 0;
+            descHiZ.colorFormat = RenderTextureFormat.RHalf;
+            descHiZ.autoGenerateMips = false;
+            descHiZ.useMipMap = true;
+            descHiZ.msaaSamples = 1;
+            descHiZ.enableRandomWrite = true;
+            descHiZ.mipCount = passSetting.MaxMipCount + 1;
+            cmd.GetTemporaryRT(HiZHandle.id, descHiZ, FilterMode.Point);
         }
 
         public override void FrameCleanup(CommandBuffer cmd)
         {
             cmd.ReleaseTemporaryRT(HiZHandle.id);
+        }
+
+        private void CreateMipDepthTexture(CommandBuffer cmd, ComputeShader cs, int mipLevel)
+        {
+            descDepth = descHiZ;
+            descDepth.width >>= mipLevel;
+            descDepth.height >>= mipLevel;
+
+            cmd.GetTemporaryRT(mipDepthHandle.id, descDepth, FilterMode.Point);
+
+            Vector2 texSize = new Vector2(descDepth.width, descDepth.height);
+            cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_RT_Size"), texSize);
+        }
+
+        private void ReleaseMipDepthTexture(CommandBuffer cmd)
+        {
+            cmd.ReleaseTemporaryRT(mipDepthHandle.id);
         }
 
         private void CopyMipLevel(CommandBuffer cmd, ComputeShader cs, int level)
@@ -106,25 +138,30 @@ public class HiZRenderPassFeature : ScriptableRendererFeature
                 out _
             );
 
-            int nextLevel = level + 1;
+            cmd.SetComputeIntParam(cs, Shader.PropertyToID("_mipLevel"), level);
 
-            RenderTextureDescriptor desc = descriptor;
-            desc.width >>= nextLevel;
-            desc.height >>= nextLevel;
+            cmd.SetComputeTextureParam(cs, 0, HiZHandle.id, HiZHandle.Identifier());
+            cmd.SetComputeTextureParam(cs, 0, Shader.PropertyToID("_mipDepthTexture"), mipDepthHandle.Identifier());
 
-            int mipDepthTextureID = Shader.PropertyToID("_mipDepthTexture");
-            cmd.GetTemporaryRT(mipDepthTextureID, desc, FilterMode.Point);
+            cmd.DispatchCompute(cs, kanel, Mathf.CeilToInt((descDepth.width + sizeX - 1) / sizeX), Mathf.CeilToInt((descDepth.height + sizeY - 1) / sizeY), 1);
+        }
 
-            Vector4 texSize = new Vector4(desc.width, desc.height, 1f / desc.width, 1f / desc.height);
-            cmd.SetComputeVectorParam(cs, Shader.PropertyToID("_RT_Size"), texSize);
+        private void CopyTexture(CommandBuffer cmd, ComputeShader cs, int level)
+        {
+            int kanel = cs.FindKernel("CSCopyTexture");
 
-            cmd.SetComputeTextureParam(cs, 0, HiZHandle.id, HiZHandle.Identifier(), level);
-            cmd.SetComputeTextureParam(cs, 0, mipDepthTextureID, mipDepthTextureID);
+            uint sizeX, sizeY;
+            cs.GetKernelThreadGroupSizes(
+                kanel,
+                out sizeX,
+                out sizeY,
+                out _
+            );
 
-            cmd.DispatchCompute(cs, kanel, Mathf.CeilToInt((desc.width + sizeX - 1) / sizeX), Mathf.CeilToInt((desc.height + sizeY - 1) / sizeY), 1);
-            cmd.CopyTexture(mipDepthTextureID, 0, 0, HiZHandle.Identifier(), 0, nextLevel);
+            cmd.SetComputeTextureParam(cs, kanel, Shader.PropertyToID("_DestTexture"), HiZHandle.Identifier(), level);
+            cmd.SetComputeTextureParam(cs, kanel, Shader.PropertyToID("_SrcTexture"), mipDepthHandle.Identifier());
 
-            cmd.ReleaseTemporaryRT(mipDepthTextureID);
+            cmd.DispatchCompute(cs, kanel, Mathf.CeilToInt((descDepth.width + sizeX - 1) / sizeX), Mathf.CeilToInt((descDepth.height + sizeY - 1) / sizeY), 1);
         }
     }
 
@@ -134,6 +171,9 @@ public class HiZRenderPassFeature : ScriptableRendererFeature
     public class Setting
     {
         public ComputeShader computeShader;
+
+        [Range(6, 8)]
+        public int MaxMipCount = 6;
     }
 
     public Setting setting = new Setting();

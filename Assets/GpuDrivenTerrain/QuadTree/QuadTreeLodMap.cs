@@ -61,6 +61,7 @@ public class QuadTreeLodMap
         int size = Setting.NodeSizeAtMaxLOD << Setting.MaxLOD;
         rtLodMap = new RenderTexture(size, size, 0, RenderTextureFormat.R8);
         rtLodMap.enableRandomWrite = true;
+        rtLodMap.filterMode = FilterMode.Point;
         rtLodMap.Create();
     }
 

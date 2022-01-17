@@ -76,8 +76,7 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
 
         quadTree.Process(out renderPatchesBuffer);
 
-        Setting.matTerrain.SetFloat(Shader.PropertyToID("offsetLOD"), 1f);
-        //Setting.matTerrain.SetBuffer(Shader.PropertyToID("CulledPatchList"), renderPatchesBuffer);
+        Setting.matTerrain.SetFloat(Shader.PropertyToID("offsetLOD"), Setting.OffsetLOD);
 
         Debug.LogFormat("四元樹處理時間 : {0} ms", Time.time - startTime);
 

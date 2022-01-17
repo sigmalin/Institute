@@ -42,6 +42,11 @@ public class QuadTreeSetting
         get { return MaxNodeCount * PatchCountInNode * PatchCountInNode; }
     }
 
+    public float OffsetLOD
+    {
+        get { return (float)LodMeshRadius / LodMeshStep; }
+    }
+
     public int GetDescriptorCount()
     {
         int count = 0;

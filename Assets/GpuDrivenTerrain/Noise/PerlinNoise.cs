@@ -13,9 +13,9 @@ public class PerlinNoise
     GraphicsBuffer PerlinPerm;
     GraphicsBuffer PerlinGrad;
 
-    QuadTreeSetting Setting;
+    NoiseSetting Setting;
 
-    public PerlinNoise(QuadTreeSetting setting)
+    public PerlinNoise(NoiseSetting setting)
     {
         Setting = setting;
     }

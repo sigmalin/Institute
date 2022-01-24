@@ -20,6 +20,9 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
 
     public bool isCulling;
 
+    public bool isDisableQuadTreeTraver = false;
+    private bool _DisableQuadTreeTraver;
+
     Mesh meshTerrain;
 
     TerrainQuadTree quadTree;
@@ -36,6 +39,8 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
         quadTree.Initialize();
 
         renderPatchesBuffer = null;
+
+        setQuadTreeTraverDisable(false);
     }
 
     private void OnDestroy()
@@ -68,6 +73,32 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
                 meshTerrain != null &&
                 argBuffer != null &&
                 quadTree != null;
+    }
+
+    void setQuadTreeTraverDisable(bool isDisable)
+    {
+        _DisableQuadTreeTraver = isDisable;
+
+        if (Setting.QuadTree.TraverserCS == null) return;
+
+        const string DISABLE_KEY_WORD = "QUAD_TREE_TRAVERSE_DISABLE";
+
+        if (_DisableQuadTreeTraver)
+        {
+            Setting.QuadTree.TraverserCS.EnableKeyword(DISABLE_KEY_WORD);
+        }
+        else
+        {
+            Setting.QuadTree.TraverserCS.DisableKeyword(DISABLE_KEY_WORD);
+        }
+    }
+
+    void Update()
+    {
+        if(isDisableQuadTreeTraver != _DisableQuadTreeTraver)
+        {
+            setQuadTreeTraverDisable(isDisableQuadTreeTraver);
+        }        
     }
 
     void LateUpdate()

@@ -10,8 +10,6 @@ public class QuadTreeSetting
     public ComputeShader BuildLodMapCS;
     public ComputeShader CullingPatchesCS;
 
-    public Material matTerrain;
-
     [Range(4, 8)]
     public int NodeSizeAtMaxLOD = 5;
 
@@ -29,12 +27,12 @@ public class QuadTreeSetting
 
     public int LengthOfLod0
     {
-        get { return PatchCountInNode * LodMeshRadius;  }
+        get { return PatchCountInNode * LodMeshRadius; }
     }
 
     public int MaxNodeCount
     {
-        get { return Pow4(MaxLOD - 1) * NodeSizeAtMaxLOD * NodeSizeAtMaxLOD;  }
+        get { return Pow4(MaxLOD - 1) * NodeSizeAtMaxLOD * NodeSizeAtMaxLOD; }
     }
 
     public int MaxPatchCount

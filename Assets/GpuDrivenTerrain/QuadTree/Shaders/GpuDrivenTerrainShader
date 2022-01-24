@@ -19,7 +19,7 @@ Shader "GpuDriven/GpuDrivenTerrainShader"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            #include "RenderPatch.cginc"
+            #include "RenderPatch.hlsl"
 
             float offsetLOD;
 
@@ -95,7 +95,7 @@ Shader "GpuDriven/GpuDrivenTerrainShader"
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 
-            #include "RenderPatch.cginc"
+            #include "RenderPatch.hlsl"
 
             float offsetLOD;
 

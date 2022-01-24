@@ -32,7 +32,7 @@ public class QuadTreeSetting
 
     public int MaxNodeCount
     {
-        get { return Pow4(MaxLOD - 1) * NodeSizeAtMaxLOD * NodeSizeAtMaxLOD; }
+        get { return Pow4(MaxLOD) * NodeSizeAtMaxLOD * NodeSizeAtMaxLOD; }
     }
 
     public int MaxPatchCount

@@ -14,9 +14,11 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
         public const int Wireframe = 1;
     };
 
-    public QuadTreeSetting Setting = new QuadTreeSetting();
+    public TerrainSetting Setting = new TerrainSetting();
 
     public bool isShowWireframe;
+
+    public bool isCulling;
 
     Mesh meshTerrain;
 
@@ -28,9 +30,9 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
     // Start is called before the first frame update
     void Start()
     {
-        LodMeshCreator.Generate(Setting.LodMeshStep, Setting.LodMeshRadius, out meshTerrain, out argBuffer);
+        LodMeshCreator.Generate(Setting.QuadTree.LodMeshStep, Setting.QuadTree.LodMeshRadius, out meshTerrain, out argBuffer);
 
-        quadTree = new TerrainQuadTree(Setting);
+        quadTree = new TerrainQuadTree(Setting.QuadTree);
         quadTree.Initialize();
 
         renderPatchesBuffer = null;
@@ -78,7 +80,7 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
 
         quadTree.Process(out renderPatchesBuffer);
 
-        Setting.matTerrain.SetFloat(Shader.PropertyToID("offsetLOD"), Setting.OffsetLOD);
+        Setting.matTerrain.SetFloat(Shader.PropertyToID("offsetLOD"), Setting.QuadTree.OffsetLOD);
 
         Debug.LogFormat("四元樹處理時間 : {0} ms", Time.time - startTime);
 
@@ -92,10 +94,13 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
     {
         if (renderPatchesBuffer == null) return false;
 
-        ComputeBuffer culledPatchesBuffer;
-        quadTree.onCulling(_cmd, Camera.main, renderPatchesBuffer, out culledPatchesBuffer);
+        if (isCulling == true)
+        {
+            ComputeBuffer culledPatchesBuffer;
+            quadTree.Culling(_cmd, Camera.main, renderPatchesBuffer, out culledPatchesBuffer);
 
-        renderPatchesBuffer = culledPatchesBuffer;
+            renderPatchesBuffer = culledPatchesBuffer;
+        }        
 
         return true;
     }

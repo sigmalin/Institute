@@ -1,4 +1,4 @@
-#include "NodeDescriptor.cginc"
+#include "NodeDescriptor.hlsl"
 
 #pragma kernel BuildLodMap
 

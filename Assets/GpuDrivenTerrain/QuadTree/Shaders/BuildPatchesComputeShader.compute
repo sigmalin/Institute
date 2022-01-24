@@ -1,5 +1,5 @@
-#include "QuadTreeCore.cginc"
-#include "RenderPatch.cginc"
+#include "QuadTreeCore.hlsl"
+#include "RenderPatch.hlsl"
 
 #pragma kernel BuildPatches
 

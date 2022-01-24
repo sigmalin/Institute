@@ -67,7 +67,7 @@ public class QuadTreeLodMap
 
     void ReleaseRenderTexture()
     {
-        if(rtLodMap != null)
+        if (rtLodMap != null)
         {
             rtLodMap.Release();
             GameObject.Destroy(rtLodMap);
@@ -75,7 +75,7 @@ public class QuadTreeLodMap
         }
     }
 
-    void BuildLodMap (GraphicsBuffer descBuffer)
+    void BuildLodMap(GraphicsBuffer descBuffer)
     {
         if (isValid() == false) return;
 
@@ -94,12 +94,12 @@ public class QuadTreeLodMap
             out _
         );
 
-        Setting.BuildLodMapCS.Dispatch(kernelBuildLodMap, 
+        Setting.BuildLodMapCS.Dispatch(kernelBuildLodMap,
                     Mathf.CeilToInt((rtLodMap.width + sizeX - 1) / sizeX),
                     Mathf.CeilToInt((rtLodMap.height + sizeY - 1) / sizeY), 1);
     }
 
-    public bool Build (GraphicsBuffer descBuffer, out RenderTexture lodMap)
+    public bool Build(GraphicsBuffer descBuffer, out RenderTexture lodMap)
     {
         lodMap = null;
 

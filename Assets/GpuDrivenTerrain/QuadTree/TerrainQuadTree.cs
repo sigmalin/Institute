@@ -10,6 +10,7 @@ public class TerrainQuadTree
     QuadTreeTraverser Traverser;
     QuadTreeBuildPatches PatchesBuilder;
     QuadTreeLodMap LodMapBuilder;
+    QuadTreeCulling CullingPatches;
 
     public TerrainQuadTree(QuadTreeSetting setting)
     {
@@ -28,6 +29,9 @@ public class TerrainQuadTree
 
         LodMapBuilder = new QuadTreeLodMap(Setting);
         LodMapBuilder.Initialize();
+
+        CullingPatches = new QuadTreeCulling(Setting);
+        CullingPatches.Initialize();
     }
 
     public void Release()
@@ -49,6 +53,12 @@ public class TerrainQuadTree
             LodMapBuilder.Release();
             LodMapBuilder = null;
         }
+
+        if (CullingPatches != null)
+        {
+            CullingPatches.Release();
+            CullingPatches = null;
+        }
     }
 
     bool isValid()
@@ -56,10 +66,11 @@ public class TerrainQuadTree
         return SystemInfo.supportsComputeShaders == true &&
                 Traverser != null &&
                 PatchesBuilder != null &&
-                LodMapBuilder != null;
+                LodMapBuilder != null &&
+                CullingPatches != null;
     }
 
-    public void Process(out GraphicsBuffer RenderPatchesBuffer)
+    public void Process(out ComputeBuffer RenderPatchesBuffer)
     {
         RenderPatchesBuffer = null;
 
@@ -73,5 +84,14 @@ public class TerrainQuadTree
         LodMapBuilder.Build(Traverser.GetNodeDescriptors(), out LodMap);
 
         PatchesBuilder.BuildBatch(buffer, size, LodMap, out RenderPatchesBuffer);
+    }
+
+    public void Culling(CommandBuffer cmd, Camera cam, ComputeBuffer RenderPatchesBuffer, out ComputeBuffer CullingPatchesBuffer)
+    {
+        CullingPatchesBuffer = null;
+
+        if (isValid() == false) return;
+
+        CullingPatches.Culling(cmd, cam, RenderPatchesBuffer, out CullingPatchesBuffer);
     }
 }

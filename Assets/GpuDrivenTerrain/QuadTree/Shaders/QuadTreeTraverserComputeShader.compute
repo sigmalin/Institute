@@ -1,6 +1,9 @@
 #include "QuadTreeCore.hlsl"
 #include "NodeDescriptor.hlsl"
 
+// 2020.1.0a9 later
+#pragma multi_compile_local __ QUAD_TREE_TRAVERSE_DISABLE
+
 #pragma kernel TraverseQuadTree
 
 uniform uint ConsumeNodeCount;
@@ -13,9 +16,13 @@ uniform float3 CameraPos;
 
 bool EvaluateNode(uint2 node, uint lod)
 {
+#if defined(QUAD_TREE_TRAVERSE_DISABLE)
+	return true;
+#else
 	float3 centerPos = CalcNodeCenterPos(node, lod);
 	float size = GetLodSize(lod);
 	return (length(CameraPos - centerPos) / (size * 1.414f)) < 1.0f;
+#endif
 }
 
 [numthreads(64,1,1)]

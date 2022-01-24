@@ -17,7 +17,7 @@ public class QuadTreeBuildPatches
     int NodeSizeAtMaxLodID;
     int LodMeshStepID;
 
-    GraphicsBuffer RenderPatchBuffer;
+    ComputeBuffer RenderPatchBuffer;
 
     QuadTreeSetting Setting;
 
@@ -66,7 +66,7 @@ public class QuadTreeBuildPatches
 
         int maxPatchCount = Setting.MaxPatchCount;
 
-        RenderPatchBuffer = new GraphicsBuffer(GraphicsBuffer.Target.Append, maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint) + sizeof(uint));
+        RenderPatchBuffer = new ComputeBuffer(maxPatchCount, sizeof(float) * 2 + sizeof(uint) + sizeof(uint) + sizeof(uint), ComputeBufferType.Append);
     }
 
     void ReleaseGraphicsBuffer()
@@ -97,8 +97,8 @@ public class QuadTreeBuildPatches
         Setting.BuildPatchesCS.Dispatch(kernelBuildPatches, srcSize, 1, 1);
     }
 
-    public bool BuildBatch(GraphicsBuffer srcBuffer, int srcSize, RenderTexture rtLodMap, out GraphicsBuffer buffer)
-    {        
+    public bool BuildBatch(GraphicsBuffer srcBuffer, int srcSize, RenderTexture rtLodMap, out ComputeBuffer buffer)
+    {
         buffer = null;
 
         if (srcBuffer == null || srcSize == 0 || rtLodMap == null) return false;

@@ -1,5 +1,5 @@
-#include "QuadTreeCore.cginc"
-#include "NodeDescriptor.cginc"
+#include "QuadTreeCore.hlsl"
+#include "NodeDescriptor.hlsl"
 
 #pragma kernel TraverseQuadTree
 

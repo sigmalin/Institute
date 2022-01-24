@@ -10,9 +10,9 @@ public class OpenSimplexNoise
     GraphicsBuffer perm;
     GraphicsBuffer permGrad2;
 
-    QuadTreeSetting Setting;
+    NoiseSetting Setting;
 
-    public OpenSimplexNoise(QuadTreeSetting setting)
+    public OpenSimplexNoise(NoiseSetting setting)
     {
         Setting = setting;
     }

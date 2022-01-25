@@ -167,7 +167,7 @@ public class PerlinNoise
         int bufferCount = BufferCount();
         int[] datas = new int[bufferCount];
 
-        for(int y = 0; y < SIZE; ++y)
+        for (int y = 0; y < SIZE; ++y)
         {
             int gradIdxY = perm[y] & 0x07;
             // remap [-1,1] -> [0, 2]

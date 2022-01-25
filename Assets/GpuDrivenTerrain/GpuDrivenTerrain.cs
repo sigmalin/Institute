@@ -12,6 +12,8 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
     {
         public const int Opaques = 0;
         public const int Wireframe = 1;
+
+        public const int Debug = 2;
     };
 
     public TerrainSetting Setting = new TerrainSetting();
@@ -27,6 +29,8 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
 
     TerrainQuadTree quadTree;
 
+    PerlinNoise perlin;
+
     ComputeBuffer renderPatchesBuffer;
     GraphicsBuffer argBuffer;
 
@@ -37,6 +41,9 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
 
         quadTree = new TerrainQuadTree(Setting.QuadTree);
         quadTree.Initialize();
+
+        perlin = new PerlinNoise(Setting.Noise);
+        perlin.Initialize();
 
         renderPatchesBuffer = null;
 
@@ -49,6 +56,12 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
         {
             quadTree.Release();
             quadTree = null;
+        }
+
+        if (perlin != null)
+        {
+            perlin.Release();
+            perlin = null;
         }
 
         if (meshTerrain != null)
@@ -115,6 +128,8 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
 
         Debug.LogFormat("四元樹處理時間 : {0} ms", Time.time - startTime);
 
+        perlin.Apply(Setting.matTerrain);
+
         if (GpuDrivenRenderPassFeature.Instance != null)
         {
             GpuDrivenRenderPassFeature.Instance.RegisterTerrain(this);
@@ -148,7 +163,7 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
             meshTerrain,
             0,
             Setting.matTerrain,
-            TerrainRenderPass.Opaques,
+            TerrainRenderPass.Debug,
             argBuffer
             );
 

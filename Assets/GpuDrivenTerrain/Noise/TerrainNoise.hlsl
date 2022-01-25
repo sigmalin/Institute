@@ -3,10 +3,13 @@
 
 //#include "..\OpenSimplexNoise\OpenSimplexNoise.hlsl"
 //#include "..\VoronoiNoise\VoronoiNoise.hlsl"
-#include "..\PerlinNoise\PerlinNoise.hlsl"
+#include "PerlinNoise.hlsl"
 
 
-#define NOISE(X) iqTurbulence(X, 0, 8, 4)
+//#define NOISE(X) turbulence(X, 32, 8, 500, 0.0005, 2, 0.5)
+//#define NOISE(X) iqTurbulence(X, 32, 12, 500, 0.0008, 2, 0.5)
+//#define NOISE(X) billowedTurbulence(X, 32, 8, 500, 0.0005, 2, 0.5)
+#define NOISE(X) RidgedTurbulence(X, 32, 12, 500, 0.0004, 2, 0.5)
 
 float BillowedNoise(float2 pos)
 {
@@ -21,9 +24,7 @@ float RidgedNoise(float2 p)
 
 float getHeight(float2 pos)
 {
-	//return VoronoiFbm(pos) * 200;
-	//return SimplexFbm(pos) * 200;
-	return (NOISE(pos / 1000).x + 1;
+	return NOISE(pos);
 }
 
 float3 getNormal(float2 pos, float h)

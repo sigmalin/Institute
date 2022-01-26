@@ -25,6 +25,8 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
     public bool isDisableQuadTreeTraver = false;
     private bool _DisableQuadTreeTraver;
 
+    private TurbulenceType _TurbulenceType;
+
     Mesh meshTerrain;
 
     TerrainQuadTree quadTree;
@@ -48,6 +50,8 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
         renderPatchesBuffer = null;
 
         setQuadTreeTraverDisable(false);
+
+        setTurbulenceType(Setting.Noise.type);
     }
 
     private void OnDestroy()
@@ -106,12 +110,34 @@ public class GpuDrivenTerrain : MonoBehaviour, IGpuDrivenTerrain
         }
     }
 
+    void setTurbulenceType(TurbulenceType _type)
+    {
+        _TurbulenceType = _type;
+
+        foreach (TurbulenceType type in System.Enum.GetValues(typeof(TurbulenceType)))
+        {
+            if(_TurbulenceType == type)
+            {
+                Setting.matTerrain.EnableKeyword(type.ToString());
+            }
+            else
+            {
+                Setting.matTerrain.DisableKeyword(type.ToString());
+            }
+        }
+    }
+
     void Update()
     {
         if(isDisableQuadTreeTraver != _DisableQuadTreeTraver)
         {
             setQuadTreeTraverDisable(isDisableQuadTreeTraver);
-        }        
+        }     
+        
+        if(Setting.Noise.type != _TurbulenceType)
+        {
+            setTurbulenceType(Setting.Noise.type);
+        }
     }
 
     void LateUpdate()

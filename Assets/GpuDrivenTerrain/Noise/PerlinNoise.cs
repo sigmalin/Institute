@@ -196,6 +196,13 @@ public class PerlinNoise
         _mat.SetBuffer(Shader.PropertyToID("_PerlinPerm"), PerlinPerm);
         _mat.SetBuffer(Shader.PropertyToID("_PerlinGrad"), PerlinGrad);
 
+        _mat.SetFloat(Shader.PropertyToID("TurbulenceSeed"), Setting.Turbulence.TurbulenceSeed);
+        _mat.SetInt(Shader.PropertyToID("TurbulenceOctaves"), Setting.Turbulence.Octaves);
+        _mat.SetFloat(Shader.PropertyToID("TurbulenceAmplitude"), Setting.Turbulence.Amplitude);
+        _mat.SetFloat(Shader.PropertyToID("TurbulenceFrequence"), Setting.Turbulence.TurbulenceFreq);
+        _mat.SetFloat(Shader.PropertyToID("TurbulenceLacunarity"), Setting.Turbulence.Lacunarity);
+        _mat.SetFloat(Shader.PropertyToID("TurbulenceGain"), Setting.Turbulence.Gain);
+
         return true;
     }
 }
